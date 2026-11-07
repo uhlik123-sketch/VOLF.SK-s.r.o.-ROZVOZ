@@ -93,6 +93,12 @@ input[type=date]{min-height:44px;padding:0 12px;border:1px solid var(--line);bor
 .btn:hover{filter:brightness(1.07)}
 .btn:disabled{opacity:.5}
 .btn.orange{background:var(--orange)}
+.btn.green{background:var(--green)}
+.handover{display:flex;align-items:center;justify-content:center;gap:14px;width:100%;min-height:76px;margin:0 0 12px;padding:12px 18px;border-radius:14px;background:var(--line);color:var(--mute);text-align:left;font-size:20px;cursor:not-allowed}
+.handover span{display:flex;flex-direction:column;gap:3px}
+.handover b{font-size:20px;font-weight:800}
+.handover small{font-size:13px;font-weight:500;opacity:.9}
+.handover.ok{background:var(--green);color:#fff;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.2)}
 .btn.ghost{background:var(--card);border:1px solid var(--line);color:var(--ink)}
 .btn.danger{background:var(--card);border:1px solid var(--red);color:var(--red)}
 .btn.small{min-height:38px;padding:0 12px;font-size:14px}
@@ -546,6 +552,20 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
       .then(function () { if (okMsg) toast(okMsg); return true; })
       .catch(function (e) { Object.keys(backup).forEach(function (k) { o[k] = backup[k]; }); render(); toast('Zmena sa nepodarila: ' + e.message); return false; });
   }
+  // FaxCopy: vodič odovzdá všetko naraz na Domkárskej, až keď sú všetky výdajky pripravené
+  function isReady(o) { return o.packages > 0 && !!o.worker; }
+  function handoverHtml() {
+    if (state.channel !== 'FaxCopy') return '';
+    var l = chanOrders(), ready = l.filter(isReady).length, ok = l.length > 0 && ready === l.length;
+    var sub = !l.length ? 'Žiadne výdajky na odovzdanie' : ok ? 'Všetkých ' + l.length + ' výdajok je pripravených' : 'Pripravených ' + ready + ' z ' + l.length + ' · čaká sa na balíky a skladníka';
+    return '<button class="handover' + (ok ? ' ok' : '') + '" data-act="handover" aria-disabled="' + (ok ? 'false' : 'true') + '">' + ic('check', 28) + '<span><b>Odovzdané na Domkárskej</b><small>' + esc(sub) + '</small></span></button>';
+  }
+  function openHandover() {
+    var l = chanOrders(), ids = l.map(function (o) { return o.id; });
+    if (!l.length || !l.every(isReady)) { toast('Nie sú všetky výdajky pripravené'); return; }
+    sheet('<h2>Odovzdané na Domkárskej?</h2><p>Všetkých ' + ids.length + ' výdajok FaxCopy (' + esc(skDate(state.date)) + ') sa označí ako vybavených a presunie do archívu.</p>' +
+      '<div class="row"><button class="btn grow green" data-act="handoverok">' + ic('check', 18) + ' Áno, odovzdané</button><button class="btn ghost" data-act="close">Zrušiť</button></div>');
+  }
   function inList(ids) { return '(' + ids.map(function (i) { return '"' + String(i).replace(/"/g, '\\"') + '"'; }).join(',') + ')'; }
   function patchMany(ids, fields) {
     var backups = ids.map(function (id) { var o = findOrder(id), b = {}; if (o) Object.keys(fields).forEach(function (k) { b[k] = o[k]; o[k] = fields[k]; }); return { id: id, b: b }; });
@@ -731,7 +751,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
       (drv ? '' : '<button class="tbtn pc" data-act="summary">' + ic('chart', 18) + ' Sumár</button><button class="tbtn pc" data-act="printlist">' + ic('printer', 18) + ' Tlač</button><button class="tbtn pc" data-act="qatoggle">' + ic('plus', 18) + ' Pridať</button><button class="tbtn mob" data-act="toolmore" aria-label="Ďalšie akcie">' + ic('dots', 18) + ' Viac</button>') +
       '<button class="tbtn" data-act="refresh" aria-label="Obnoviť">' + ic('refresh', 18) + (state.loading ? ' …' : '') + '</button></div></div>';
     if (drv) {
-      h += '<div class="kpis"><div class="kpi b"><b>' + visible().length + '</b><span>Zostáva doručiť</span></div></div></section>';
+      h += '<div class="kpis"><div class="kpi b"><b>' + visible().length + '</b><span>Zostáva doručiť</span></div></div></section>' + handoverHtml();
     } else {
       h += kpiHtml() +
         '<div class="fbar"><input type="search" id="srch" class="srch" placeholder="Hľadať meno, adresu, č. výdajky…" value="' + esc(state.q) + '" autocomplete="off">' +
@@ -1206,6 +1226,13 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     else if (act === 'pack') { openPack(id); }
     else if (act === 'slip' && o) { patchOrder(id, { slip_printed: !o.slip_printed }, !o.slip_printed ? 'Výdajka ' + id + ' označená ako vytlačená' : 'Označenie vytlačenia zrušené'); }
     else if (act === 'move') { openMove(id); }
+    else if (act === 'handover') { openHandover(); }
+    else if (act === 'handoverok') {
+      var hl = chanOrders(), hids = hl.map(function (x) { return x.id; });
+      if (!hl.length || !hl.every(isReady)) { closeModal(); toast('Nie sú všetky výdajky pripravené'); return; }
+      closeModal();
+      patchMany(hids, { delivered: true, delivered_at: new Date().toISOString() }).then(function () { toast('Odovzdané na Domkárskej: ' + hids.length + ' výdajok'); });
+    }
     else if (act === 'okolieopen') { openOkolie(id, node.getAttribute('data-ch')); }
     else if (act === 'dookolie' && o) {
       var nm = ($('ok-pick').value || '').replace(/\s+/g, ' ').trim();
