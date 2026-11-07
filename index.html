@@ -156,6 +156,12 @@ input:disabled{background:var(--bg);color:var(--mute)}
 .bdg.cod{background:#ffe3c2;color:#8a4300}
 .bdg.pay{background:var(--bg);color:var(--mute);font-weight:500}
 .bdg.cash{background:var(--green-soft);color:var(--green)}
+.bdg.dt{font-weight:800;letter-spacing:.04em;font-size:13px;padding:6px 11px;border:2px solid transparent}
+.bdg.dt-bal{background:#efe3ff;color:#5a1fa8;border-color:#5a1fa8}
+.bdg.dt-dop{background:#ffe9c9;color:#8a4300;border-color:#c26a00}
+.bdg.dt-kur{background:#dcebff;color:#0b4a9e;border-color:#0b4a9e}
+.bdg.dt-os{background:var(--green-soft);color:var(--green);border-color:var(--green)}
+.bdg.dt-roz,.bdg.dt-oth{background:var(--bg);color:var(--mute);border-color:var(--line)}
 .pk{min-width:44px;height:44px;border-radius:10px;border:1.5px dashed #b9c3d3;font:600 26px/1 var(--f-disp);color:#8a96aa;padding:0 8px}
 .pk.has{border:1.5px solid #f5a623;color:var(--ink);background:#fff}
 .r2{margin:8px 0 0 0;color:var(--mute);display:flex;gap:6px 14px;flex-wrap:wrap;align-items:center;overflow-wrap:anywhere}
@@ -294,6 +300,19 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
   }
   function payOpts(cur) { return PAYS.map(function (p) { return '<option' + (cur === p ? ' selected' : '') + '>' + p + '</option>'; }).join(''); }
   var FILTERS = [['all', 'Všetky'], ['cash', 'Hotovosť/Dobierka'], ['goods', 'Tovar'], ['unprinted', 'Nevytlačené'], ['nolabel', 'Bez balíkov']];
+  var DT_FILTERS = [['dt_bal', 'Balíkomat'], ['dt_dop', 'Doprava'], ['dt_kur', 'Kuriér']];
+  function filtersFor() { return state.channel === 'Kuriér' ? FILTERS.concat(DT_FILTERS) : FILTERS; }
+  // typ dopravy z MRP -> text dlaždice (XML ho skracuje na 10 znakov)
+  function dtInfo(o) {
+    var d = plain(o.delivery_type || '').trim(); if (!d) return null;
+    if (d.indexOf('balik') === 0) return { k: 'bal', t: 'BALÍKOMAT' };
+    if (d.indexOf('doprava') === 0) return { k: 'dop', t: 'DOPRAVA KU…' };
+    if (d.indexOf('osobn') === 0) return { k: 'os', t: 'OSOBNÝ ODBER' };
+    if (d.indexOf('rozvoz') === 0) return { k: 'roz', t: 'ROZVOZ VOLF' };
+    if (d.indexOf('kuri') === 0) return { k: 'kur', t: 'KURIÉR' };
+    return { k: 'oth', t: String(o.delivery_type).toUpperCase() };
+  }
+  function dtBadge(o) { var d = dtInfo(o); return d ? '<span class="bdg dt dt-' + d.k + '">' + esc(d.t) + '</span>' : ''; }
   var MAX_STOPS = 10;
   var DEPOT = 'Bratislavská 535, Most pri Bratislave';
 
@@ -543,6 +562,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     if (f === 'goods') return o.goods;
     if (f === 'unprinted') return !o.slip_printed;
     if (f === 'nolabel') return !(o.packages > 0);
+    if (f.indexOf('dt_') === 0) { var d = dtInfo(o); return !!d && d.k === f.slice(3); }
     return true;
   }
   function routeCmp(a, b) {
@@ -555,7 +575,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     var q = plain(state.q || '').trim(); if (!q) return true;
     return plain([o.id, o.customer, o.company_name, o.address, o.city, o.zip, o.phone, o.note].join(' ')).indexOf(q) >= 0;
   }
-  function visible() { return sortedChan().filter(matches).filter(searchOk); }
+  function visible() { return sortedChan().filter(function (o) { return matches(o); }).filter(searchOk); }
   function stateOf(o) { return o.incomplete ? 'inc' : o.in_vehicle ? 'veh' : o.slip_printed ? 'slip' : o.label_printed ? 'lbl' : o.packages > 0 ? 'vyd' : 'none'; }
   function stopQuery(o) { return (o.lat != null && o.lng != null) ? o.lat + ',' + o.lng : [o.address, o.zip, o.city].filter(Boolean).join(', '); }
   function navUrl(o) { return 'https://www.google.com/maps/dir/?api=1&travelmode=driving&dir_action=navigate&destination=' + encodeURIComponent(stopQuery(o)); }
@@ -613,7 +633,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
       (drv ? '' : '<button class="dv' + (o.delivered ? ' on' : '') + '" data-act="deliver" data-id="' + id + '" aria-pressed="' + (o.delivered ? 'true' : 'false') + '" aria-label="Doručené">' + ic('check', 18) + '</button>')) +
       '<span class="oid">' + esc(dn(o.id)) + '</span><span class="oname">' + esc(o.customer) + '</span>' +
       (o.goods ? '<span class="bdg goods">Tovar</span>' : '') +
-      payBadge(o) + (o.items > 0 ? '<span class="bdg pay">' + o.items + ' pol.</span>' : '') +
+      dtBadge(o) + payBadge(o) + (o.items > 0 ? '<span class="bdg pay">' + o.items + ' pol.</span>' : '') +
       (drv ? '<span class="bdg pay">' + (o.packages || 0) + ' balíkov</span>' : '<button class="pk' + (o.packages > 0 ? ' has' : '') + '" data-act="pack" data-id="' + id + '" title="Zadať balíky a skladníka" aria-label="Balíky: ' + o.packages + '">' + o.packages + '</button>') +
       (o.source === 'mrp' ? '' : '<span class="bdg m">ručne</span>') + '</div>' +
       '<div class="r2">' + (addr ? '<a class="addr" href="https://www.google.com/maps/search/?api=1&query=' + q + '" target="_blank" rel="noopener">' + esc(addr) + '</a>' : '<span>bez adresy</span>') +
@@ -644,7 +664,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     var o = findOrder(id); if (!o) return;
     var canDel = o.source === 'manual' || state.isAdmin;
     var row = function (act, icon, label, on) { return '<button class="mrow' + (on ? ' on' : '') + '" data-act="' + act + '" data-id="' + esc(id) + '" data-close="1">' + ic(icon, 20) + ' ' + label + '</button>'; };
-    sheet('<h2>' + esc(o.customer) + '</h2><p>Výdajka ' + esc(dn(o.id)) + '</p>' +
+    sheet('<h2>' + esc(o.customer) + '</h2><p>Výdajka ' + esc(dn(o.id)) + (dtInfo(o) ? ' · Doprava: ' + esc(dtInfo(o).t) : '') + '</p>' +
       row('veh', 'truck', o.in_vehicle ? 'Vo vozidle ✓ (zrušiť)' : 'Označiť „vo vozidle"', o.in_vehicle) +
       row('inc', 'warn', o.incomplete ? 'Nekompletné ✓ (zrušiť)' : 'Označiť ako nekompletné', o.incomplete) +
       row('slip', 'file', o.slip_printed ? 'Výdaj vytlačený ✓ (zrušiť)' : 'Výdaj vytlačený (len označenie)', o.slip_printed) +
@@ -712,7 +732,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     } else {
       h += kpiHtml() +
         '<div class="fbar"><input type="search" id="srch" class="srch" placeholder="Hľadať meno, adresu, č. výdajky…" value="' + esc(state.q) + '" autocomplete="off">' +
-        '<div class="filters">' + FILTERS.map(function (f) { var cnt = chanOrders().filter(function (o) { return matches(o, f[0]); }).length; return '<button class="fchip' + (state.filter === f[0] ? ' on' : '') + (cnt === 0 && f[0] !== 'all' && state.filter !== f[0] ? ' zero' : '') + '" data-act="filter" data-v="' + f[0] + '">' + esc(f[1]) + ' <b>' + cnt + '</b></button>'; }).join('') +
+        '<div class="filters">' + filtersFor().map(function (f) { var cnt = chanOrders().filter(function (o) { return matches(o, f[0]); }).length; return '<button class="fchip' + (state.filter === f[0] ? ' on' : '') + (cnt === 0 && f[0] !== 'all' && state.filter !== f[0] ? ' zero' : '') + '" data-act="filter" data-v="' + f[0] + '">' + esc(f[1]) + ' <b>' + cnt + '</b></button>'; }).join('') +
         '<button class="fchip legbtn' + (state.legend ? ' on' : '') + '" data-act="legend" aria-label="Legenda farieb">Farby</button></div></div>' + (state.legend ? legend : '') + '</section>';
       h += quickHtml();
     }
