@@ -1141,7 +1141,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     if (node.getAttribute('data-close') && !node.getAttribute('data-confirm')) closeModal();
     if (act === 'close') { closeModal(); state.pendingView = null; }
     else if (act === 'refresh') { reloadAll(false); }
-    else if (act === 'channel') { state.channel = v; state.filter = 'all'; state.view = 'rozvoz'; state.selected = {}; render(); }
+    else if (act === 'channel') { state.channel = v; state.filter = 'all'; state.q = ''; state.view = 'rozvoz'; state.selected = {}; render(); }
     else if (act === 'pk') { $('p-count').value = v; Array.prototype.forEach.call(document.querySelectorAll('#p-tiles .tile'), function (t) { t.classList.toggle('on', t === node); }); }
     else if (act === 'pw') { $('p-worker').value = v; Array.prototype.forEach.call(document.querySelectorAll('#w-tiles .tile'), function (t) { t.classList.toggle('on', t === node); }); }
     else if (act === 'archive') { state.view = 'archiv'; state.error = ''; render(); loadArch().then(render).catch(function (e) { state.error = 'Archív sa nenačítal. ' + e.message; render(); }); }
