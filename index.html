@@ -167,6 +167,9 @@ input:disabled{background:var(--bg);color:var(--mute)}
 .r2{margin:8px 0 0 0;color:var(--mute);display:flex;gap:6px 14px;flex-wrap:wrap;align-items:center;overflow-wrap:anywhere}
 .r2 a{font-weight:500}
 .addr{text-decoration:underline dotted;text-underline-offset:3px;color:var(--ink)}
+.addr.fx{display:flex;flex-direction:column;gap:2px;text-decoration:none;flex:1 1 100%}
+.fx-city{font:800 22px/1.15 var(--f-body);color:var(--ink);text-decoration:underline dotted;text-underline-offset:4px}
+.fx-street{font-size:14px;font-weight:500;color:var(--mute)}
 .co{font-size:13px}
 .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 .acts.big{gap:8px}.acts.big .ib.big{flex:1;justify-content:center;height:54px;font-size:16px;font-weight:600}
@@ -635,7 +638,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
       dtBadge(o) + payBadge(o) + (o.items > 0 ? '<span class="bdg pay">' + o.items + ' pol.</span>' : '') +
       (drv ? '<span class="bdg pay">' + (o.packages || 0) + ' balíkov</span>' : '<button class="pk' + (o.packages > 0 ? ' has' : '') + '" data-act="pack" data-id="' + id + '" title="Zadať balíky a skladníka" aria-label="Balíky: ' + o.packages + '">' + o.packages + '</button>') +
       (o.source === 'mrp' ? '' : '<span class="bdg m">ručne</span>') + '</div>' +
-      '<div class="r2">' + (addr ? '<a class="addr" href="https://www.google.com/maps/search/?api=1&query=' + q + '" target="_blank" rel="noopener">' + esc(addr) + '</a>' : '<span>bez adresy</span>') +
+      '<div class="r2">' + (addr && o.channel === 'FaxCopy' && o.city ? '<a class="addr fx" href="https://www.google.com/maps/search/?api=1&query=' + q + '" target="_blank" rel="noopener"><span class="fx-city">' + esc([o.zip, o.city].filter(Boolean).join(' ')) + '</span>' + (o.address ? '<span class="fx-street">' + esc(o.address) + '</span>' : '') + '</a>' : addr ? '<a class="addr" href="https://www.google.com/maps/search/?api=1&query=' + q + '" target="_blank" rel="noopener">' + esc(addr) + '</a>' : '<span>bez adresy</span>') +
       (o.phone ? '<a href="tel:' + esc(String(o.phone).replace(/[^+\d]/g, '')) + '">' + ic('phone', 15) + ' ' + esc(o.phone) + '</a>' : '') +
       '<span>' + (isDated(o.channel) ? '' : esc(skDate(o.order_date)) + ' ') + esc(o.time || '') + (o.worker && !drv ? ' · ' + esc(o.worker) : '') + '</span>' +
       (o.note ? '<span>Poznámka: ' + esc(o.note) + '</span>' : '') +
