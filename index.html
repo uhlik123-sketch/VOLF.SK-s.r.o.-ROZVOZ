@@ -343,6 +343,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
   }
   function skDate(s) { var p = String(s).split('-'); return p[2] + '.' + p[1] + '.' + p[0]; }
   function $(id) { return document.getElementById(id); }
+  function dn(id) { return String(id == null ? '' : id).replace(/^\/+/, ''); }
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
   }
@@ -610,7 +611,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
       '<div class="r1">' + (drv ? '' : '<input class="chk" type="checkbox" data-sel="' + id + '"' + (state.selected[o.id] ? ' checked' : '') + ' aria-label="Vybrať na tlač štítkov">') +
       (ba ? (o.route_pos != null ? '<span class="rn" title="Poradie na trase">' + o.route_pos + '</span>' : '') :
       (drv ? '' : '<button class="dv' + (o.delivered ? ' on' : '') + '" data-act="deliver" data-id="' + id + '" aria-pressed="' + (o.delivered ? 'true' : 'false') + '" aria-label="Doručené">' + ic('check', 18) + '</button>')) +
-      '<span class="oid">' + id + '</span><span class="oname">' + esc(o.customer) + '</span>' +
+      '<span class="oid">' + esc(dn(o.id)) + '</span><span class="oname">' + esc(o.customer) + '</span>' +
       (o.goods ? '<span class="bdg goods">Tovar</span>' : '') +
       payBadge(o) + (o.items > 0 ? '<span class="bdg pay">' + o.items + ' pol.</span>' : '') +
       (drv ? '<span class="bdg pay">' + (o.packages || 0) + ' balíkov</span>' : '<button class="pk' + (o.packages > 0 ? ' has' : '') + '" data-act="pack" data-id="' + id + '" title="Zadať balíky a skladníka" aria-label="Balíky: ' + o.packages + '">' + o.packages + '</button>') +
@@ -643,7 +644,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     var o = findOrder(id); if (!o) return;
     var canDel = o.source === 'manual' || state.isAdmin;
     var row = function (act, icon, label, on) { return '<button class="mrow' + (on ? ' on' : '') + '" data-act="' + act + '" data-id="' + esc(id) + '" data-close="1">' + ic(icon, 20) + ' ' + label + '</button>'; };
-    sheet('<h2>' + esc(o.customer) + '</h2><p>Výdajka ' + esc(o.id) + '</p>' +
+    sheet('<h2>' + esc(o.customer) + '</h2><p>Výdajka ' + esc(dn(o.id)) + '</p>' +
       row('veh', 'truck', o.in_vehicle ? 'Vo vozidle ✓ (zrušiť)' : 'Označiť „vo vozidle"', o.in_vehicle) +
       row('inc', 'warn', o.incomplete ? 'Nekompletné ✓ (zrušiť)' : 'Označiť ako nekompletné', o.incomplete) +
       row('slip', 'file', o.slip_printed ? 'Výdaj vytlačený ✓ (zrušiť)' : 'Výdaj vytlačený (len označenie)', o.slip_printed) +
@@ -728,7 +729,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     return h + '<div style="margin-top:12px">' + list.map(function (o) {
       var addr = [o.address, [o.zip, o.city].filter(Boolean).join(' ')].filter(Boolean).join(', ');
       var when = o.delivered_at ? new Date(o.delivered_at).toLocaleString('sk-SK', { timeZone: 'Europe/Bratislava', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-      return '<article class="o s-lbl"><div class="r1"><span class="oid">' + esc(o.id) + '</span><span class="oname">' + esc(o.customer) + '</span>' +
+      return '<article class="o s-lbl"><div class="r1"><span class="oid">' + esc(dn(o.id)) + '</span><span class="oname">' + esc(o.customer) + '</span>' +
         '<span class="bdg m">' + esc(o.channel) + '</span>' + (o.goods ? '<span class="bdg goods">Tovar</span>' : '') +
         payBadge(o) + '</div>' +
         '<div class="r2"><span>' + (addr ? esc(addr) : 'bez adresy') + '</span>' + (o.phone ? '<span>' + esc(o.phone) + '</span>' : '') +
@@ -815,7 +816,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
   function openPack(id) {
     var o = findOrder(id); if (!o) return;
     var opts = '<option value="">— vyberte skladníka —</option>' + state.workers.map(function (w) { return '<option' + (w.name === o.worker ? ' selected' : '') + '>' + esc(w.name) + '</option>'; }).join('');
-    sheet('<h2>' + esc(o.customer) + '</h2><p>Výdajka ' + esc(o.id) + ' · ' + esc([o.address, o.city].filter(Boolean).join(', ')) + '</p><p>Počet balíkov aj skladník sú povinné. Po uložení sa automaticky otvorí tlač štítkov, jeden štítok na balík.</p>' +
+    sheet('<h2>' + esc(o.customer) + '</h2><p>Výdajka ' + esc(dn(o.id)) + ' · ' + esc([o.address, o.city].filter(Boolean).join(', ')) + '</p><p>Počet balíkov aj skladník sú povinné. Po uložení sa automaticky otvorí tlač štítkov, jeden štítok na balík.</p>' +
       '<div class="fld"><label for="p-count">Počet balíkov <span class="req">*</span></label><div class="tiles" id="p-tiles">' + [1,2,3,4,5,6,7,8,9,10].map(function (n) { return '<button type="button" class="tile' + (o.packages === n ? ' on' : '') + '" data-act="pk" data-v="' + n + '">' + n + '</button>'; }).join('') + '</div><input type="number" id="p-count" min="1" step="1" inputmode="numeric" placeholder="alebo iné číslo" value="' + (o.packages > 0 ? o.packages : '') + '"></div>' +
       '<div class="fld"><label>Skladník <span class="req">*</span></label><div class="tiles wide" id="w-tiles">' + state.workers.map(function (w) { return '<button type="button" class="tile' + (w.name === o.worker ? ' on' : '') + '" data-act="pw" data-v="' + esc(w.name) + '">' + esc(w.name) + '</button>'; }).join('') + '</div><input type="hidden" id="p-worker" value="' + esc(o.worker || '') + '"></div>' +
       '<div class="row"><button class="btn grow" data-act="savepack" data-id="' + esc(o.id) + '">' + ic('printer', 18) + ' Uložiť a tlačiť štítky</button><button class="btn ghost" data-act="close">Zrušiť</button></div>');
@@ -823,7 +824,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
   function openEdit(id) {
     var o = findOrder(id); if (!o) return;
     var lock = o.source === 'mrp' && !state.isAdmin ? ' disabled' : '';
-    sheet('<h2>Upraviť výdajku ' + esc(o.id) + '</h2>' + (lock ? '<p>Adresu a kontakt z MRP môže meniť len správca.</p>' : '<p>&nbsp;</p>') +
+    sheet('<h2>Upraviť výdajku ' + esc(dn(o.id)) + '</h2>' + (lock ? '<p>Adresu a kontakt z MRP môže meniť len správca.</p>' : '<p>&nbsp;</p>') +
       '<div class="fld"><label for="e-name">Adresát</label><input type="text" id="e-name" value="' + esc(o.customer) + '"' + lock + '></div>' +
       '<div class="fld"><label for="e-street">Ulica</label><input type="text" id="e-street" value="' + esc(o.address) + '"' + lock + '></div>' +
       '<div class="qa-grid" style="margin-top:0"><div class="fld"><label for="e-zip">PSČ</label><input type="text" id="e-zip" value="' + esc(o.zip || '') + '"' + lock + '></div><div class="fld"><label for="e-city">Mesto</label><input type="text" id="e-city" value="' + esc(o.city) + '"' + lock + '></div></div>' +
@@ -882,7 +883,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
   }
   function openOkolie(id) {
     var o = findOrder(id); if (!o) return;
-    sheet('<h2>Zákazník do Okolia</h2><p>Výdajka ' + esc(o.id) + ' · ' + esc(o.customer) + '</p>' +
+    sheet('<h2>Zákazník do Okolia</h2><p>Výdajka ' + esc(dn(o.id)) + ' · ' + esc(o.customer) + '</p>' +
       '<div class="fld"><label for="ok-pick">Názov zákazníka (hľadá sa v mene odberateľa aj príjemcu)</label><input type="text" id="ok-pick" value="' + esc(o.customer) + '"></div>' +
       '<p style="margin-top:12px">Odteraz sa všetky nové výdajky, v ktorých sa tento názov nachádza, automaticky zaradia do Okolia. Táto výdajka sa presunie hneď. Pozor, krátky alebo všeobecný názov (napr. firma s viacerými prevádzkami) zaradí do Okolia všetky jej výdajky.</p>' +
       '<div class="row"><button class="btn grow" data-act="dookolie" data-id="' + esc(o.id) + '">' + ic('car', 18) + ' Zaradiť do Okolia</button><button class="btn ghost" data-act="close">Zrušiť</button></div>');
@@ -890,7 +891,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
   function openMove(id) {
     var o = findOrder(id); if (!o) return;
     var defDate = isDated(o.channel) ? o.order_date : nextWorkday(todayStr());
-    sheet('<h2>Presunúť výdajku ' + esc(o.id) + '</h2><p>' + esc(o.customer) + ' · teraz: ' + esc(o.channel) + (isDated(o.channel) ? ' · ' + esc(skDate(o.order_date)) : '') + '. Po ručnom presune ju automatické triedenie už nezmení.</p>' +
+    sheet('<h2>Presunúť výdajku ' + esc(dn(o.id)) + '</h2><p>' + esc(o.customer) + ' · teraz: ' + esc(o.channel) + (isDated(o.channel) ? ' · ' + esc(skDate(o.order_date)) : '') + '. Po ručnom presune ju automatické triedenie už nezmení.</p>' +
       '<div class="fld"><label for="m-date">Dátum rozvozu (platí pre BA a FaxCopy)</label><input type="date" id="m-date" value="' + esc(defDate) + '"></div>' +
       CHANNELS.filter(function (c) { return c.k !== o.channel; }).map(function (c) {
         return '<button class="chbtn" data-act="domove" data-id="' + esc(o.id) + '" data-v="' + esc(c.k) + '">' + ic(c.icon, 24) + ' ' + esc(c.k) + '</button>';
@@ -1038,7 +1039,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
   function openSign(id) {
     var o = findOrder(id); if (!o) return;
     sigDirty = false;
-    sheet('<h2>Podpis zákazníka</h2><p>' + esc(o.customer) + ' · výdajka ' + esc(o.id) + '</p>' +
+    sheet('<h2>Podpis zákazníka</h2><p>' + esc(o.customer) + ' · výdajka ' + esc(dn(o.id)) + '</p>' +
       '<canvas id="sig-c" width="640" height="260" aria-label="Plocha na podpis"></canvas>' +
       '<div class="fld"><label for="sig-name">Meno podpisujúceho (nepovinné)</label><input type="text" id="sig-name"></div>' +
       '<div class="row"><button class="btn grow orange" data-act="dosign" data-id="' + esc(o.id) + '">' + ic('check', 18) + ' Potvrdiť doručenie</button><button class="btn ghost" data-act="clearsig">Vymazať</button><button class="btn ghost" data-act="close">Zrušiť</button></div>');
@@ -1079,7 +1080,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     var h = '';
     ok.forEach(function (o) {
       for (var i = 1; i <= o.packages; i++) {
-        h += '<div class="lbl"><img class="lbl-logo" src="' + LOGO + '" alt="VOLF"><div class="lbl-top"><span class="lbl-id">#' + esc(o.id) + '</span><span class="lbl-n">' + i + '/' + o.packages + '</span></div>' +
+        h += '<div class="lbl"><img class="lbl-logo" src="' + LOGO + '" alt="VOLF"><div class="lbl-top"><span class="lbl-id">#' + esc(dn(o.id)) + '</span><span class="lbl-n">' + i + '/' + o.packages + '</span></div>' +
           '<div class="lbl-c">' + esc(o.customer) + '</div>' +
           (o.address ? '<div class="lbl-a">' + esc(o.address) + '</div>' : '') +
           '<div class="lbl-a">' + esc([o.zip, o.city].filter(Boolean).join(' ')) + '</div>' +
@@ -1098,7 +1099,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     var list = visible();
     if (!list.length) { toast('Nie je čo tlačiť'); return; }
     var rows = list.map(function (o, i) {
-      return '<tr><td>' + (i + 1) + '</td><td>' + esc(o.id) + '</td><td>' + esc(o.customer) + '</td><td>' + esc([o.address, o.zip, o.city].filter(Boolean).join(', ')) + '</td><td>' + esc(o.phone || '') + '</td><td>' + o.packages + '</td><td>' + esc((o.payment === 'Hotovosť' || o.payment === 'Dobierka') ? o.payment + ' ' + money(o.amount) : (o.payment || 'Faktúra')) + '</td></tr>';
+      return '<tr><td>' + (i + 1) + '</td><td>' + esc(dn(o.id)) + '</td><td>' + esc(o.customer) + '</td><td>' + esc([o.address, o.zip, o.city].filter(Boolean).join(', ')) + '</td><td>' + esc(o.phone || '') + '</td><td>' + o.packages + '</td><td>' + esc((o.payment === 'Hotovosť' || o.payment === 'Dobierka') ? o.payment + ' ' + money(o.amount) : (o.payment || 'Faktúra')) + '</td></tr>';
     }).join('');
     $('print-root').innerHTML = '<div class="print-list"><h1>Rozvoz ' + esc(state.channel) + (isDated() ? ' · ' + esc(skDate(state.date)) : '') + '</h1><table><tr><th>#</th><th>Č. výdajky</th><th>Adresát</th><th>Adresa</th><th>Telefón</th><th>Bal.</th><th>Úhrada</th></tr>' + rows + '</table></div>';
     printNow();
