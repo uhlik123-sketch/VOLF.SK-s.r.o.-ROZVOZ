@@ -300,16 +300,15 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
   }
   function payOpts(cur) { return PAYS.map(function (p) { return '<option' + (cur === p ? ' selected' : '') + '>' + p + '</option>'; }).join(''); }
   var FILTERS = [['all', 'Všetky'], ['cash', 'Hotovosť/Dobierka'], ['goods', 'Tovar'], ['unprinted', 'Nevytlačené'], ['nolabel', 'Bez balíkov']];
-  var DT_FILTERS = [['dt_bal', 'Balíkomat'], ['dt_dop', 'Doprava'], ['dt_kur', 'Kuriér']];
+  var DT_FILTERS = [['dt_bal', 'Balíkomat'], ['dt_kur', 'Kuriér']];
   function filtersFor() { return state.channel === 'Kuriér' ? FILTERS.concat(DT_FILTERS) : FILTERS; }
   // typ dopravy z MRP -> text dlaždice (XML ho skracuje na 10 znakov)
   function dtInfo(o) {
     var d = plain(o.delivery_type || '').trim(); if (!d) return null;
     if (d.indexOf('balik') === 0) return { k: 'bal', t: 'BALÍKOMAT' };
-    if (d.indexOf('doprava') === 0) return { k: 'dop', t: 'DOPRAVA KU…' };
     if (d.indexOf('osobn') === 0) return { k: 'os', t: 'OSOBNÝ ODBER' };
     if (d.indexOf('rozvoz') === 0) return { k: 'roz', t: 'ROZVOZ VOLF' };
-    if (d.indexOf('kuri') === 0) return { k: 'kur', t: 'KURIÉR' };
+    if (d.indexOf('kuri') === 0 || d.indexOf('doprava') === 0) return { k: 'kur', t: 'KURIÉR' };
     return { k: 'oth', t: String(o.delivery_type).toUpperCase() };
   }
   function dtBadge(o) { var d = dtInfo(o); return d ? '<span class="bdg dt dt-' + d.k + '">' + esc(d.t) + '</span>' : ''; }
