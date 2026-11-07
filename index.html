@@ -650,7 +650,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     var more = function (act, icon, label, on, extra) { return '<button class="mrow' + (on ? ' on' : '') + '" data-act="' + act + '" data-id="' + id + '"' + (extra || '') + '>' + ic(icon, 20) + ' ' + label + '</button>'; };
     return head +
       '<div class="acts">' + primary + (ba ? navBtn(false) : '') +
-      '<button class="ib pr" data-act="print1" data-id="' + id + '" title="Tlačiť štítky" aria-label="Tlačiť štítky">' + ic('tag') + '</button>' +
+      (packed ? '<button class="ib pr" data-act="print1" data-id="' + id + '" title="Vytlačiť štítky znova" aria-label="Vytlačiť štítky znova">' + ic('tag') + '</button>' : '') +
       '<button class="ib txt morebtn" data-act="more" data-id="' + id + '" aria-label="Viac akcií">' + ic('dots', 18) + ' Viac</button></div>' +
       '<div class="acts2">' +
       (o.email ? '<a class="ib" href="mailto:' + esc(o.email) + '" title="E-mail" aria-label="E-mail">' + ic('mail') + '</a>' : '') +
