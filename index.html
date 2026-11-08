@@ -862,7 +862,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     var h = '<div class="card"><h3>Pridať skladníka</h3><div class="addrow"><input class="grow" type="text" id="w-name" placeholder="Meno a priezvisko"><input class="grow" type="text" id="w-role" placeholder="Pozícia" value="Skladník"><input class="grow" type="text" id="w-shift" placeholder="Zmena" value="06:00 – 14:00"><button class="btn" data-act="addworker">Pridať</button></div></div><div class="card wl">';
     if (!state.workers.length) h += '<div class="empty">Žiadni skladníci.</div>';
     state.workers.forEach(function (w) {
-      h += '<div class="w"><div><b>' + esc(w.name) + '</b><small>' + esc(w.role) + ' · ' + esc(w.shift) + '</small></div><button class="btn danger small" data-act="delworker" data-id="' + esc(w.id) + '" data-name="' + esc(w.name) + '">Odstrániť</button></div>';
+      h += '<div class="w"><div><b>' + esc(w.name) + '</b><small>' + esc(w.role) + ' · ' + esc(w.shift) + '</small></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="btn ghost small" data-act="editworker" data-id="' + esc(w.id) + '">' + ic('pencil', 16) + ' Upraviť</button><button class="btn danger small" data-act="delworker" data-id="' + esc(w.id) + '" data-name="' + esc(w.name) + '">Odstrániť</button></div></div>';
     });
     return h + '</div>';
   }
@@ -1355,6 +1355,8 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     else if (act === 'qaadd') { quickAdd(); }
     else if (act === 'dologin') { doLogin(); }
     else if (act === 'addworker') { addWorker(); }
+    else if (act === 'editworker') { openWorkerEdit(id); }
+    else if (act === 'saveworker') { saveWorker(id); }
     else if (act === 'delworker') { confirmThen(node, function () { delRow('/rest/v1/mrp_workers?id=eq.', id, loadWorkers, 'Skladník ' + node.getAttribute('data-name') + ' bol odstránený'); }); }
     else if (act === 'addokolie') { addOkolie(); }
     else if (act === 'delokolie') { confirmThen(node, function () { delRow('/rest/v1/okolie_customers?id=eq.', id, function () { return Promise.all([loadOkolie(), loadOrders()]); }, node.getAttribute('data-name') + ' bol odstránený zo zoznamu'); }); }
@@ -1437,6 +1439,27 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
         var er = $('l-err'), b = $('l-go'); if (!er) return;
         er.style.display = 'block'; er.textContent = msg; b.disabled = false; b.textContent = 'Prihlásiť sa';
       });
+  }
+  function openWorkerEdit(id) {
+    var w = state.workers.filter(function (x) { return x.id === id; })[0]; if (!w) return;
+    sheet('<h2>Upraviť skladníka</h2><div class="fld"><label>Meno a priezvisko</label><input type="text" id="we-name" value="' + esc(w.name) + '"></div>' +
+      '<div class="fld"><label>Pozícia</label><input type="text" id="we-role" value="' + esc(w.role || '') + '"></div>' +
+      '<div class="fld"><label>Zmena</label><input type="text" id="we-shift" value="' + esc(w.shift || '') + '"></div>' +
+      '<p class="hint">Pri zmene mena sa nové meno prepíše aj pri už zadaných výdajkách (aj v archíve), aby sedeli odmeny a štatistiky.</p>' +
+      '<div class="row"><button class="btn grow" data-act="saveworker" data-id="' + esc(w.id) + '">Uložiť</button><button class="btn ghost" data-act="close">Zrušiť</button></div>');
+  }
+  function saveWorker(id) {
+    var w = state.workers.filter(function (x) { return x.id === id; })[0]; if (!w) return;
+    var name = $('we-name').value.replace(/\s+/g, ' ').trim(), role = $('we-role').value.trim(), shift = $('we-shift').value.trim();
+    if (!name) { toast('Zadajte meno skladníka'); return; }
+    if (state.workers.some(function (x) { return x.id !== id && plain(x.name) === plain(name); })) { toast('Skladník s týmto menom už existuje'); return; }
+    var old = w.name;
+    closeModal();
+    api('/rest/v1/mrp_workers?id=eq.' + encodeURIComponent(id), { method: 'PATCH', prefer: 'return=minimal', body: { name: name, role: role || 'Skladník', shift: shift || '06:00 – 14:00' } })
+      .then(function () { return old !== name ? api('/rest/v1/mrp_orders?worker=eq.' + encodeURIComponent(old), { method: 'PATCH', prefer: 'return=minimal', body: { worker: name } }) : null; })
+      .then(function () { return Promise.all([loadWorkers(), loadOrders()]); })
+      .then(function () { render(); toast('Skladník upravený'); })
+      .catch(function (e) { toast('Nepodarilo sa upraviť: ' + e.message); });
   }
   function addWorker() {
     var name = $('w-name').value.trim(), role = $('w-role').value.trim(), shift = $('w-shift').value.trim();
