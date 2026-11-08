@@ -668,6 +668,11 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
   function emptyHtml() {
     return '<div class="empty">' + (state.orders.length ? (state.filter !== 'all' || state.q ? 'Žiadna výdajka pre vybraný filter alebo hľadanie. <button class="tbtn" data-act="clearf">Zrušiť filter</button>' : 'V tomto kanáli nie sú žiadne výdajky.') : 'Na tento deň zatiaľ nie sú žiadne výdajky. Zobrazia sa, keď ich pomocný program z MRP odošle, alebo ich pridajte ručne.') + '</div>';
   }
+  function doneChip(o) {
+    if (!o.mrp_done_reason || o.delivered) return '';
+    var what = o.mrp_done_reason === 'faktúra' ? 'faktúru' : 'fiškál (pohyb 8)';
+    return isReady(o) ? '<span class="chip b">Už má ' + what + ' · do archívu automaticky</span>' : '<span class="chip r">⚠ Už má ' + what + ' · zadajte balíky</span>';
+  }
   function listMode() { return !state.isDriver && state.layout !== 'karty' && window.innerWidth >= 900; }
   function rowHtml(o) {
     if (state.exp[o.id]) return orderHtml(o);
@@ -675,7 +680,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     var primary = packed
       ? '<button class="ib txt sig" data-act="deliver" data-id="' + id + '">' + ic(ba ? 'pencil' : 'check', 18) + ' ' + (ba ? 'Podpis' : 'Vybavené') + '</button>'
       : '<button class="ib txt sig todo" data-act="pack" data-id="' + id + '">' + ic('box', 18) + ' Zadať balíky</button>';
-    var flags = (o.incomplete ? '<span class="chip r">Nekompletné</span>' : '') + (o.in_vehicle ? '<span class="chip b">Vo vozidle</span>' : '') + (o.label_printed && o.packages > 0 ? '<span class="chip g">Štítok ✓</span>' : '');
+    var flags = doneChip(o) + (o.incomplete ? '<span class="chip r">Nekompletné</span>' : '') + (o.in_vehicle ? '<span class="chip b">Vo vozidle</span>' : '') + (o.label_printed && o.packages > 0 ? '<span class="chip g">Štítok ✓</span>' : '');
     var sub = (o.city ? '<b class="rw-city">' + esc(o.city) + '</b>' : '') + (o.address ? ' <span>' + esc(o.address) + '</span>' : '') + (o.phone ? ' <span class="rw-ph">· ' + esc(o.phone) + '</span>' : '') + ' <span class="rw-ph">· ' + (isDated(o.channel) ? '' : esc(skDate(o.order_date)) + ' ') + esc(o.time || '') + (o.worker ? ' · ' + esc(o.worker) : '') + '</span>';
     return '<article class="o rw s-' + stateOf(o) + '" data-row="' + id + '">' +
       '<input class="chk" type="checkbox" data-sel="' + id + '"' + (state.selected[o.id] ? ' checked' : '') + ' aria-label="Vybrať na tlač štítkov">' +
@@ -705,7 +710,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     var navBtn = function (big) { return '<a class="ib txt nav' + (big ? ' big' : '') + '" href="' + esc(navUrl(o)) + '" target="_blank" rel="noopener" title="Navigovať na túto adresu">' + ic('nav', 18) + ' Navigovať</a>'; };
     var doneLabel = ba ? 'Podpis / Vybavené' : 'Vybavené';
     var doneBtn = function (big) { return '<button class="ib txt sig' + (big ? ' big' : '') + '" data-act="deliver" data-id="' + id + '" title="' + (ba ? 'Podpis zákazníka a vybavenie' : 'Označiť ako vybavené') + '">' + ic(ba ? 'pencil' : 'check', 18) + ' ' + doneLabel + '</button>'; };
-    var chips = (o.label_printed && o.packages > 0 ? '<span class="chip g">Štítok ✓</span>' : '') + (o.slip_printed ? '<span class="chip p">Výdaj vytlačený</span>' : '') + (o.in_vehicle ? '<span class="chip b">Vo vozidle</span>' : '') + (o.incomplete ? '<span class="chip r">Nekompletné</span>' : '');
+    var chips = (o.label_printed && o.packages > 0 ? '<span class="chip g">Štítok ✓</span>' : '') + (o.slip_printed ? '<span class="chip p">Výdaj vytlačený</span>' : '') + (o.in_vehicle ? '<span class="chip b">Vo vozidle</span>' : '') + (o.incomplete ? '<span class="chip r">Nekompletné</span>' : '') + doneChip(o);
     var head = '<article class="o s-' + st + (o.delivered ? ' done' : '') + (drv ? ' drv' : '') + '">' +
       '<div class="r1">' + (drv ? '' : '<input class="chk" type="checkbox" data-sel="' + id + '"' + (state.selected[o.id] ? ' checked' : '') + ' aria-label="Vybrať na tlač štítkov">') +
       (ba ? (o.route_pos != null ? '<span class="rn" title="Poradie na trase">' + o.route_pos + '</span>' : '') :
@@ -833,7 +838,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
       var when = o.delivered_at ? new Date(o.delivered_at).toLocaleString('sk-SK', { timeZone: 'Europe/Bratislava', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
       return '<article class="o s-lbl"><div class="r1"><span class="oid">' + esc(dn(o.id)) + '</span><span class="oname">' + esc(o.customer) + '</span>' +
         '<span class="bdg m">' + esc(o.channel) + '</span>' + (o.goods ? '<span class="bdg goods">Tovar</span>' : '') +
-        payBadge(o) + '</div>' +
+        payBadge(o) + (o.auto_reason ? '<span class="chip b">Auto: ' + esc(o.auto_reason) + '</span>' : '') + '</div>' +
         '<div class="r2"><span>' + (addr ? esc(addr) : 'bez adresy') + '</span>' + (o.phone ? '<span>' + esc(o.phone) + '</span>' : '') +
         '<span>Vybavené ' + esc(when) + '</span><span>Balíky: ' + (o.packages || 0) + (o.worker ? ' · ' + esc(o.worker) : '') + '</span>' +
         (o.note ? '<span>Poznámka: ' + esc(o.note) + '</span>' : '') + '</div>' +
