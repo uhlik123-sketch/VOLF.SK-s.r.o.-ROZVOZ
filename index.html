@@ -196,6 +196,7 @@ input:disabled{background:var(--bg);color:var(--mute)}
 .ib.todo{background:var(--blue);border-color:var(--blue)}
 .ib.morebtn{margin-left:auto}
 .acts2{display:none}
+.slipm.on{background:var(--blue-soft);border-color:#9cc1f1;color:#5a1fa8}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .chip{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--bg);border:1px solid var(--line);color:#4b5668}
 .chip.g{background:#e7f7ee;border-color:#9bd9b5;color:#17713f}.chip.p{background:#efe7ff;border-color:#b59af5;color:#5b34c4}.chip.b{background:var(--blue-soft);border-color:#9cc1f1;color:var(--blue)}.chip.r{background:var(--red-soft);border-color:#eba7aa;color:var(--red)}
@@ -207,6 +208,7 @@ input:disabled{background:var(--bg);color:var(--mute)}
   .olist{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
   .olist .o{margin-bottom:0}
   .olist .empty{grid-column:1/-1}
+  .slipm{display:none}
   .acts2{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
   .ib.morebtn{display:none}
   .ib.todo,.acts:not(.big) .ib.sig.big{flex:0 1 auto;min-width:200px}
@@ -725,6 +727,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     var more = function (act, icon, label, on, extra) { return '<button class="mrow' + (on ? ' on' : '') + '" data-act="' + act + '" data-id="' + id + '"' + (extra || '') + '>' + ic(icon, 20) + ' ' + label + '</button>'; };
     return head +
       '<div class="acts">' + primary + (ba ? navBtn(false) : '') +
+      '<button class="ib txt slipm' + (o.slip_printed ? ' on' : '') + '" data-act="slip" data-id="' + id + '" title="Len označenie pre ostatných skladníkov, nič sa netlačí" aria-pressed="' + (o.slip_printed ? 'true' : 'false') + '">' + ic('file', 18) + (o.slip_printed ? ' Výdaj ✓' : ' Výdaj?') + '</button>' +
       '<button class="ib txt morebtn" data-act="more" data-id="' + id + '" aria-label="Viac akcií">' + ic('dots', 18) + ' Viac</button></div>' +
       '<div class="acts2">' +
       (o.email ? '<a class="ib" href="mailto:' + esc(o.email) + '" title="E-mail" aria-label="E-mail">' + ic('mail') + '</a>' : '') +
