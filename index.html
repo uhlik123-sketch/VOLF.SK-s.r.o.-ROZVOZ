@@ -168,8 +168,11 @@ input:disabled{background:var(--bg);color:var(--mute)}
 .bdg.dt-kur{background:#dcebff;color:#0b4a9e;border-color:#0b4a9e}
 .bdg.dt-os{background:var(--green-soft);color:var(--green);border-color:var(--green)}
 .bdg.dt-roz,.bdg.dt-oth{background:var(--bg);color:var(--mute);border-color:var(--line)}
-.pk{min-width:44px;height:44px;border-radius:10px;border:1.5px dashed #b9c3d3;font:600 26px/1 var(--f-disp);color:#8a96aa;padding:0 8px}
-.pk.has{border:1.5px solid #f5a623;color:var(--ink);background:#fff}
+.pk{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:64px;height:60px;border-radius:12px;border:2px dashed var(--red);font:800 34px/1 var(--f-disp);color:var(--red);background:var(--red-soft);padding:0 10px}
+.pk small{font:700 11px/1 var(--f-body);letter-spacing:.05em;text-transform:uppercase}
+.pk.has{border:2px solid #d98a00;color:#2b1a00;background:#ffc94d}
+.pk.static{cursor:default}
+.needpack{background:var(--line)!important;color:var(--mute)!important}
 .r2{margin:8px 0 0 0;color:var(--mute);display:flex;gap:6px 14px;flex-wrap:wrap;align-items:center;overflow-wrap:anywhere}
 .r2 a{font-weight:500}
 .addr{text-decoration:underline dotted;text-underline-offset:3px;color:var(--ink)}
@@ -656,7 +659,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
       '<span class="oid">' + esc(dn(o.id)) + '</span><span class="oname">' + esc(o.customer) + '</span>' +
       (o.goods ? '<span class="bdg goods">Tovar</span>' : '') +
       dtBadge(o) + payBadge(o) + (o.items > 0 ? '<span class="bdg pay">' + o.items + ' pol.</span>' : '') +
-      (drv ? '<span class="bdg pay">' + (o.packages || 0) + ' balíkov</span>' : '<button class="pk' + (o.packages > 0 ? ' has' : '') + '" data-act="pack" data-id="' + id + '" title="Zadať balíky a skladníka" aria-label="Balíky: ' + o.packages + '">' + o.packages + '</button>') +
+      (drv ? '<span class="pk static' + (o.packages > 0 ? ' has' : '') + '" aria-label="Balíky: ' + (o.packages || 0) + '">' + (o.packages || 0) + '<small>' + (o.packages > 0 ? 'balíkov' : 'chýbajú') + '</small></span>' : '<button class="pk' + (o.packages > 0 ? ' has' : '') + '" data-act="pack" data-id="' + id + '" title="Zadať balíky a skladníka" aria-label="Balíky: ' + o.packages + '">' + (o.packages || 0) + '<small>' + (o.packages > 0 ? 'balíkov' : 'zadať') + '</small></button>') +
       (o.source === 'mrp' ? '' : '<span class="bdg m">ručne</span>') + '</div>' +
       '<div class="r2">' + (addr && o.channel === 'FaxCopy' && o.city ? '<a class="addr fx" href="https://www.google.com/maps/search/?api=1&query=' + q + '" target="_blank" rel="noopener"><span class="fx-city">' + esc(o.city) + '</span>' + (o.address ? '<span class="fx-street">' + esc(o.address) + '</span>' : '') + '</a>' : addr ? '<a class="addr" href="https://www.google.com/maps/search/?api=1&query=' + q + '" target="_blank" rel="noopener">' + esc(addr) + '</a>' : '<span>bez adresy</span>') +
       (o.phone ? '<a href="tel:' + esc(String(o.phone).replace(/[^+\d]/g, '')) + '">' + ic('phone', 15) + ' ' + esc(o.phone) + '</a>' : '') +
@@ -664,7 +667,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
       (o.note ? '<span>Poznámka: ' + esc(o.note) + '</span>' : '') +
       (o.company_name && plain(o.company_name) !== plain(o.customer) ? '<span class="co">Odberateľ: ' + esc(o.company_name) + '</span>' : '') + '</div>' +
       (chips ? '<div class="chips">' + chips + '</div>' : '');
-    if (drv) return head + '<div class="acts big">' + navBtn(true) + doneBtn(true) + '</div></article>';
+    if (drv) return head + '<div class="acts big">' + navBtn(true) + (isReady(o) ? doneBtn(true) : '<button class="ib txt sig big needpack" data-act="needpack">Čaká na balíky</button>') + '</div></article>';
     var packed = o.packages > 0 && !!o.worker;
     var primary = packed ? doneBtn(true) : '<button class="ib txt sig big todo" data-act="pack" data-id="' + id + '" title="Zadať balíky a skladníka">' + ic('box', 18) + ' Zadať balíky</button>';
     var more = function (act, icon, label, on, extra) { return '<button class="mrow' + (on ? ' on' : '') + '" data-act="' + act + '" data-id="' + id + '"' + (extra || '') + '>' + ic(icon, 20) + ' ' + label + '</button>'; };
@@ -1214,6 +1217,8 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     else if (act === 'clearsig') { var cv = $('sig-c'); if (cv && cv._reset) cv._reset(); }
     else if (act === 'dosign') { saveSign(id); }
     else if (act === 'showsig') { showSign(id); }
+    else if (act === 'needpack') { toast('Výdajka ešte nemá zadané balíky a skladníka'); }
+    else if (act === 'deliver' && o && !o.delivered && !isReady(o)) { if (state.isDriver) toast('Výdajka ešte nemá zadané balíky'); else { toast('Najprv zadajte počet balíkov a skladníka'); openPack(id); } }
     else if (act === 'deliver' && o && o.channel === 'Rozvoz BA' && !o.delivered) { openSign(id); }
     else if (act === 'deliver' && o) { patchOrder(id, { delivered: !o.delivered, delivered_at: !o.delivered ? new Date().toISOString() : null }, 'Výdajka ' + id + ' presunutá do archívu'); }
     else if (act === 'mode') {
