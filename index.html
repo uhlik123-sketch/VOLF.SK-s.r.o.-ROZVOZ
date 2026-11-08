@@ -45,12 +45,20 @@ a{color:var(--blue)}
 .hbtn{display:inline-flex;align-items:center;gap:6px;min-height:42px;padding:0 12px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);border-radius:12px;color:#fff;font-weight:500;font-size:14px}
 .hbtn:hover{background:rgba(255,255,255,.16)}
 @media(max-width:400px){.hbtn .t{display:none}.brand b{font-size:17px}}
-.chan{display:flex;gap:6px;padding:2px 16px 12px;max-width:1100px;margin:0 auto;overflow-x:auto;scrollbar-width:none}
-.chan::-webkit-scrollbar{display:none}
-.ctab{position:relative;display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:12px;color:#b6c4dc;font:600 15px/1 var(--f-body);letter-spacing:.01em;white-space:nowrap}
-.ctab.on{background:#fff;color:#0b1324;box-shadow:0 2px 10px rgba(0,0,0,.25)}
-.ctab:hover:not(.on){background:rgba(255,255,255,.1)}
-.cnt{position:absolute;top:-6px;right:-3px;min-width:20px;height:20px;padding:0 5px;border-radius:99px;background:var(--red);color:#fff;font:600 12px/20px var(--f-body);text-align:center;box-shadow:0 0 0 2px #14284f}
+.chan{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:2px 16px 14px;max-width:1100px;margin:0 auto}
+.ctab{position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:4px;min-height:84px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);color:#d3deef;font:700 14px/1.1 var(--f-body);text-align:left;min-width:0}
+.ctab .tt{display:flex;align-items:center;gap:6px;max-width:100%}
+.ctab .num{font:800 30px/1 var(--f-disp);color:#fff}
+.ctab .sub{font:600 11px/1.1 var(--f-body);color:#ffd27a}
+.ctab .sub.ok{color:#7be0a8}
+.ctab .sub .l{display:none}
+.ctab.arch{justify-content:center;align-items:center;gap:6px}
+.ctab.on{background:#fff;color:#0b1324;box-shadow:0 3px 14px rgba(0,0,0,.3);border-color:#fff}
+.ctab.on .num{color:#0b1324}
+.ctab.on .sub{color:#b36b00}.ctab.on .sub.ok{color:var(--green)}
+.ctab:hover:not(.on){background:rgba(255,255,255,.16)}
+@media(min-width:900px){.chan{grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:12px}.ctab{min-height:100px;padding:14px 18px;font-size:19px}.ctab .num{font-size:38px}.ctab .sub{font-size:13px}.ctab .sub .l{display:inline}.ctab .sub .s{display:none}}
+.cnt{position:absolute;top:-7px;right:-4px;min-width:20px;height:20px;padding:0 5px;border-radius:99px;background:var(--red);color:#fff;font:600 12px/20px var(--f-body);text-align:center;box-shadow:0 0 0 2px #14284f}
 main{max-width:1100px;margin:0 auto;padding:14px 16px 60px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:14px;margin-bottom:12px}
 
@@ -845,9 +853,10 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
       body = state.view === 'skladnici' ? workersHtml() : state.view === 'okolie' ? okolieHtml() : state.view === 'odmeny' ? rewardsHtml() : statsHtml();
     } else { state.view = 'rozvoz'; body = rozvozHtml(); }
     var tabs = CHANNELS.map(function (c) {
-      var n = chanOrders(c.k).filter(function (o) { return !o.slip_printed; }).length;
-      return '<button class="ctab' + (state.view === 'rozvoz' && state.channel === c.k ? ' on' : '') + '" data-act="channel" data-v="' + esc(c.k) + '">' + ic(c.icon, 20) + ' ' + esc(c.label) + (n ? '<span class="cnt">' + n + '</span>' : '') + '</button>';
-    }).join('') + (state.isDriver ? '' : '<button class="ctab' + (state.view === 'archiv' ? ' on' : '') + '" data-act="archive">' + ic('archive', 20) + ' Archív</button>');
+      var all = chanOrders(c.k), n = all.filter(function (o) { return !o.slip_printed; }).length, rd = all.filter(isReady).length;
+      var sub = all.length ? '<span class="sub' + (rd === all.length ? ' ok' : '') + '"><span class="s">pripr. ' + rd + '/' + all.length + '</span><span class="l">pripravených ' + rd + ' z ' + all.length + '</span></span>' : '<span class="sub ok"><span class="s">prázdne</span><span class="l">nič na vybavenie</span></span>';
+      return '<button class="ctab' + (state.view === 'rozvoz' && state.channel === c.k ? ' on' : '') + '" data-act="channel" data-v="' + esc(c.k) + '"><span class="tt">' + ic(c.icon, 20) + esc(c.label) + '</span><span class="num">' + all.length + '</span>' + sub + (n ? '<span class="cnt">' + n + '</span>' : '') + '</button>';
+    }).join('') + (state.isDriver ? '' : '<button class="ctab arch' + (state.view === 'archiv' ? ' on' : '') + '" data-act="archive"><span class="tt">' + ic('archive', 20) + 'Archív</span></button>');
     $('app').innerHTML = '<header class="top"><div class="top1"><div class="logo"><span class="mark">' + ic('truck', 24) + '</span><span class="brand"><b>VOLF SK, s.r.o.</b><small>Rozvoz</small></span></div><div class="sp"></div>' +
       (state.isDriver ? '' : '<button class="hbtn" data-act="menu">' + ic('sliders', 18) + '<span class="t">Správa</span></button>') +
       '<button class="hbtn' + (state.isDriver ? ' on' : '') + '" data-act="mode" title="Prepnúť zobrazenie sklad / vodič">' + ic(state.isDriver ? 'user' : 'truck', 18) + '<span class="t">' + (state.isDriver ? 'Vodič' : 'Sklad') + '</span></button>' +
