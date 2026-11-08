@@ -214,7 +214,7 @@ input:disabled{background:var(--bg);color:var(--mute)}
 }
 @media(min-width:900px){
   .olist.tbl{display:block}
-  .rwh,.rw{display:grid;grid-template-columns:26px 64px minmax(0,1fr) 64px 170px 84px;align-items:center;gap:10px}
+  .rwh,.rw{display:grid;grid-template-columns:26px 64px minmax(0,1fr) 64px 118px 150px 84px;align-items:center;gap:10px}
   .rwh{padding:0 14px 6px;font:700 11px/1 var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
   .rw{padding:8px 14px;margin-bottom:6px;min-height:60px;cursor:pointer}
   .rw:hover{box-shadow:0 2px 10px rgba(0,0,0,.12)}
@@ -228,6 +228,9 @@ input:disabled{background:var(--bg);color:var(--mute)}
   .rw .ib.todo,.rw .ib.sig{min-width:0;flex:none}
   .rw .ib.txt{width:100%;min-height:44px;height:44px;justify-content:center}
   .rw .chk{width:20px;height:20px}
+  .rw .slipb .l{display:none}
+  .rw .slipb.on{background:var(--blue-soft);border-color:#9cc1f1}
+  @media(min-width:1200px){.rw .slipb .l{display:inline}.rw .slipb .s{display:none}.rwh,.rw{grid-template-columns:26px 64px minmax(0,1fr) 64px 190px 160px 84px}}
 }
 @media(min-width:1500px){.olist{grid-template-columns:1fr 1fr 1fr}main,.top1,.chan{max-width:1700px}}
 
@@ -670,19 +673,20 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     var primary = packed
       ? '<button class="ib txt sig" data-act="deliver" data-id="' + id + '">' + ic(ba ? 'pencil' : 'check', 18) + ' ' + (ba ? 'Podpis' : 'Vybavené') + '</button>'
       : '<button class="ib txt sig todo" data-act="pack" data-id="' + id + '">' + ic('box', 18) + ' Zadať balíky</button>';
-    var flags = (o.incomplete ? '<span class="chip r">Nekompletné</span>' : '') + (o.in_vehicle ? '<span class="chip b">Vo vozidle</span>' : '') + (o.slip_printed ? '<span class="chip p">Výdaj ✓</span>' : '') + (o.label_printed && o.packages > 0 ? '<span class="chip g">Štítok ✓</span>' : '');
+    var flags = (o.incomplete ? '<span class="chip r">Nekompletné</span>' : '') + (o.in_vehicle ? '<span class="chip b">Vo vozidle</span>' : '') + (o.label_printed && o.packages > 0 ? '<span class="chip g">Štítok ✓</span>' : '');
     var sub = (o.city ? '<b class="rw-city">' + esc(o.city) + '</b>' : '') + (o.address ? ' <span>' + esc(o.address) + '</span>' : '') + (o.phone ? ' <span class="rw-ph">· ' + esc(o.phone) + '</span>' : '') + ' <span class="rw-ph">· ' + (isDated(o.channel) ? '' : esc(skDate(o.order_date)) + ' ') + esc(o.time || '') + (o.worker ? ' · ' + esc(o.worker) : '') + '</span>';
     return '<article class="o rw s-' + stateOf(o) + '" data-row="' + id + '">' +
       '<input class="chk" type="checkbox" data-sel="' + id + '"' + (state.selected[o.id] ? ' checked' : '') + ' aria-label="Vybrať na tlač štítkov">' +
       '<span class="oid">' + esc(dn(o.id)) + (ba && o.route_pos != null ? '<span class="rn">' + o.route_pos + '</span>' : '') + '</span>' +
       '<div class="rw-main"><div class="rw-l1"><span class="oname">' + esc(o.customer) + '</span>' + (o.goods ? '<span class="bdg goods">Tovar</span>' : '') + dtBadge(o) + payBadge(o) + (o.items > 0 ? '<span class="bdg pay">' + o.items + ' pol.</span>' : '') + flags + '</div><div class="rw-l2">' + sub + '</div></div>' +
       '<button class="pk' + (o.packages > 0 ? ' has' : '') + '" data-act="pack" data-id="' + id + '" title="Zadať balíky a skladníka" aria-label="Balíky: ' + (o.packages || 0) + '">' + (o.packages || 0) + '</button>' +
+      '<button class="ib txt slipb' + (o.slip_printed ? ' on' : '') + '" data-act="slip" data-id="' + id + '" title="Len označenie pre ostatných skladníkov, nič sa netlačí" aria-pressed="' + (o.slip_printed ? 'true' : 'false') + '">' + ic('file', 18) + '<span class="l"> Výdaj vytlačený' + (o.slip_printed ? ' ✓' : '?') + '</span><span class="s"> Výdaj' + (o.slip_printed ? ' ✓' : '?') + '</span></button>' +
       primary + '<button class="ib txt morebtn2" data-act="more" data-id="' + id + '" aria-label="Viac akcií">' + ic('dots', 18) + ' Viac</button></article>';
   }
   function listInner() {
     var l = visible(); if (!l.length) return emptyHtml();
     if (!listMode()) return l.map(orderHtml).join('');
-    return '<div class="rwh"><span></span><span>Číslo</span><span>Zákazník · mesto, ulica</span><span>Balíky</span><span></span><span></span></div>' + l.map(rowHtml).join('');
+    return '<div class="rwh"><span></span><span>Číslo</span><span>Zákazník · mesto, ulica</span><span>Balíky</span><span></span><span></span><span></span></div>' + l.map(rowHtml).join('');
   }
   function refreshList() { var el = document.querySelector('.olist'); if (el) { el.innerHTML = listInner(); el.classList.toggle('tbl', listMode()); } else render(); }
   function lblBarUpdate() { var b = $('lblbar'); if (!b) return; b.innerHTML = lblBarHtml(); b.className = 'lblbar' + (selectedOrders().length ? ' show' : ''); }
