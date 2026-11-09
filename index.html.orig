@@ -237,16 +237,20 @@ input:disabled{background:var(--bg);color:var(--mute)}
   .rw .slipb.on{background:var(--blue-soft);border-color:#9cc1f1}
   @media(min-width:1200px){.rw .slipb .l{display:inline}.rw .slipb .s{display:none}.rwh,.rw{grid-template-columns:26px 64px minmax(0,1fr) 64px 190px 160px 84px}}
 }
+@media(min-width:1280px){.split{grid-template-columns:minmax(0,1.5fr) minmax(400px,1fr);gap:16px}.split .rwh,.split .rw{grid-template-columns:26px 64px minmax(0,1fr) 64px 118px 150px;gap:10px;padding-left:14px;padding-right:14px}.split .rw .ib.txt{font-size:inherit}.split .rw-l2,.split .rw-note{white-space:nowrap}}
 @media(min-width:1500px){.olist{grid-template-columns:1fr 1fr 1fr}main,.top1,.chan{max-width:1700px}}
-@media(min-width:1280px){
-  .split{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(400px,1fr);gap:16px;align-items:start}
+@media(min-width:900px){
+  .split{display:grid;grid-template-columns:minmax(0,1fr) minmax(330px,.8fr);gap:12px;align-items:start}
   .split .olist.tbl{min-width:0}
   .detail{position:sticky;top:8px;max-height:calc(100vh - 16px);overflow:auto}
   .detail .o{margin:0}
   .dempty{padding:40px 16px;text-align:center;color:var(--mute)}
-  .split .rwh,.split .rw{grid-template-columns:26px 64px minmax(0,1fr) 64px 118px 150px}
+  .split .rwh,.split .rw{grid-template-columns:24px 58px minmax(0,1fr) 58px 96px 124px;gap:8px;padding-left:10px;padding-right:10px}
   .split .rwh span:last-child,.split .rw .morebtn2{display:none}
   .split .rw .slipb .l{display:none}.split .rw .slipb .s{display:inline}
+  .split .rw .ib.txt{padding-left:6px;padding-right:6px;font-size:13px}
+  .split .rw-l2,.split .rw-note{white-space:normal}
+  .split{grid-template-columns:minmax(0,1fr) minmax(300px,.72fr)}
   .rw.sel{outline:2px solid var(--blue);background:var(--blue-soft)}
 }
 
@@ -466,7 +470,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
   });
 
   var state = {
-    layout: (function () { var d = window.innerWidth >= 1280 ? 'okno' : 'zoznam'; try { var v = localStorage.getItem('volf.layout'); return (v === 'okno' || v === 'zoznam' || v === 'karty') ? v : d; } catch (e) { return d; } })(), exp: {}, sel: null, selIdx: 0,
+    layout: (function () { var d = window.innerWidth >= 900 ? 'okno' : 'zoznam'; try { var v = localStorage.getItem('volf.layout'); return (v === 'okno' || v === 'zoznam' || v === 'karty') ? v : d; } catch (e) { return d; } })(), exp: {}, sel: null, selIdx: 0,
     orders: [], workers: [], okolie: [], stats: null, rw: { month: todayStr().slice(0, 7), orders: [], recs: [], busy: false },
     date: todayStr(), arch: [], archDate: todayStr(), archChan: 'all', archQ: '', channel: 'Rozvoz BA', filter: 'all', selected: {}, view: 'rozvoz',
     q: '', legend: false, session: null, isAdmin: false, isStaff: false, isDriver: false, loading: true, error: '', pendingView: null, quickOpen: false, dirty: false,
@@ -715,7 +719,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     var what = o.mrp_done_reason === 'faktúra' ? 'faktúru' : 'fiškál (pohyb 8)';
     return isReady(o) ? '<span class="chip b">Už má ' + what + ' · do archívu automaticky</span>' : '<span class="chip r">⚠ Už má ' + what + ' · zadajte balíky</span>';
   }
-  function splitMode() { return !state.isDriver && state.layout === 'okno' && window.innerWidth >= 1280; }
+  function splitMode() { return !state.isDriver && state.layout === 'okno' && window.innerWidth >= 900; }
   function ensureSel(l) {
     if (!splitMode()) return;
     var i = -1; l.forEach(function (o, k) { if (o.id === state.sel) i = k; });

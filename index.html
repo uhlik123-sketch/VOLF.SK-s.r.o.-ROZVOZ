@@ -470,7 +470,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
   });
 
   var state = {
-    layout: (function () { var d = window.innerWidth >= 900 ? 'okno' : 'zoznam'; try { var v = localStorage.getItem('volf.layout'); return (v === 'okno' || v === 'zoznam' || v === 'karty') ? v : d; } catch (e) { return d; } })(), exp: {}, sel: null, selIdx: 0,
+    layout: (function () { var d = window.innerWidth >= 900 ? 'okno' : 'zoznam'; try { var v = localStorage.getItem('volf.layout2'); return (v === 'okno' || v === 'zoznam' || v === 'karty') ? v : d; } catch (e) { return d; } })(), exp: {}, sel: null, selIdx: 0,
     orders: [], workers: [], okolie: [], stats: null, rw: { month: todayStr().slice(0, 7), orders: [], recs: [], busy: false },
     date: todayStr(), arch: [], archDate: todayStr(), archChan: 'all', archQ: '', channel: 'Rozvoz BA', filter: 'all', selected: {}, view: 'rozvoz',
     q: '', legend: false, session: null, isAdmin: false, isStaff: false, isDriver: false, loading: true, error: '', pendingView: null, quickOpen: false, dirty: false,
@@ -1358,7 +1358,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     else if (act === 'slip' && o) { patchOrder(id, { slip_printed: !o.slip_printed }, !o.slip_printed ? 'Výdajka ' + id + ' označená ako vytlačená' : 'Označenie vytlačenia zrušené'); }
     else if (act === 'move') { openMove(id); }
     else if (act === 'rowtoggle') { delete state.exp[id]; refreshList(); }
-    else if (act === 'layout') { state.layout = state.layout === 'okno' ? 'zoznam' : state.layout === 'zoznam' ? 'karty' : 'okno'; try { localStorage.setItem('volf.layout', state.layout); } catch (e) {} render(); }
+    else if (act === 'layout') { state.layout = state.layout === 'okno' ? 'zoznam' : state.layout === 'zoznam' ? 'karty' : 'okno'; try { localStorage.setItem('volf.layout2', state.layout); } catch (e) {} render(); }
     else if (act === 'handover') { openHandover(); }
     else if (act === 'handoverok') {
       var hl = chanOrders(), hids = hl.map(function (x) { return x.id; });
