@@ -238,6 +238,17 @@ input:disabled{background:var(--bg);color:var(--mute)}
   @media(min-width:1200px){.rw .slipb .l{display:inline}.rw .slipb .s{display:none}.rwh,.rw{grid-template-columns:26px 64px minmax(0,1fr) 64px 190px 160px 84px}}
 }
 @media(min-width:1500px){.olist{grid-template-columns:1fr 1fr 1fr}main,.top1,.chan{max-width:1700px}}
+@media(min-width:1280px){
+  .split{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(400px,1fr);gap:16px;align-items:start}
+  .split .olist.tbl{min-width:0}
+  .detail{position:sticky;top:8px;max-height:calc(100vh - 16px);overflow:auto}
+  .detail .o{margin:0}
+  .dempty{padding:40px 16px;text-align:center;color:var(--mute)}
+  .split .rwh,.split .rw{grid-template-columns:26px 64px minmax(0,1fr) 64px 118px 150px}
+  .split .rwh span:last-child,.split .rw .morebtn2{display:none}
+  .split .rw .slipb .l{display:none}.split .rw .slipb .s{display:inline}
+  .rw.sel{outline:2px solid var(--blue);background:var(--blue-soft)}
+}
 
 .ib{width:42px;height:42px;border:1px solid var(--line);border-radius:10px;display:grid;place-items:center;background:var(--card);color:#4b5668;text-decoration:none}
 .ib:hover{background:var(--bg)}
@@ -455,7 +466,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
   });
 
   var state = {
-    layout: (function () { try { return localStorage.getItem('volf.layout') || 'zoznam'; } catch (e) { return 'zoznam'; } })(), exp: {},
+    layout: (function () { var d = window.innerWidth >= 1280 ? 'okno' : 'zoznam'; try { var v = localStorage.getItem('volf.layout'); return (v === 'okno' || v === 'zoznam' || v === 'karty') ? v : d; } catch (e) { return d; } })(), exp: {}, sel: null, selIdx: 0,
     orders: [], workers: [], okolie: [], stats: null, rw: { month: todayStr().slice(0, 7), orders: [], recs: [], busy: false },
     date: todayStr(), arch: [], archDate: todayStr(), archChan: 'all', archQ: '', channel: 'Rozvoz BA', filter: 'all', selected: {}, view: 'rozvoz',
     q: '', legend: false, session: null, isAdmin: false, isStaff: false, isDriver: false, loading: true, error: '', pendingView: null, quickOpen: false, dirty: false,
@@ -704,16 +715,28 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     var what = o.mrp_done_reason === 'faktúra' ? 'faktúru' : 'fiškál (pohyb 8)';
     return isReady(o) ? '<span class="chip b">Už má ' + what + ' · do archívu automaticky</span>' : '<span class="chip r">⚠ Už má ' + what + ' · zadajte balíky</span>';
   }
+  function splitMode() { return !state.isDriver && state.layout === 'okno' && window.innerWidth >= 1280; }
+  function ensureSel(l) {
+    if (!splitMode()) return;
+    var i = -1; l.forEach(function (o, k) { if (o.id === state.sel) i = k; });
+    if (i >= 0) { state.selIdx = i; return; }
+    var n = l[Math.min(state.selIdx || 0, l.length - 1)];
+    state.sel = n ? n.id : null; state.selIdx = n ? l.indexOf(n) : 0;
+  }
+  function detailInner() {
+    var o = state.sel ? findOrder(state.sel) : null;
+    return o ? orderHtml(o) : '<div class="dempty">Vyber výdajku zo zoznamu</div>';
+  }
   function listMode() { return !state.isDriver && state.layout !== 'karty' && window.innerWidth >= 900; }
   function rowHtml(o) {
-    if (state.exp[o.id]) return orderHtml(o);
+    if (!splitMode() && state.exp[o.id]) return orderHtml(o);
     var id = esc(o.id), packed = isReady(o), ba = o.channel === 'Rozvoz BA';
     var primary = packed
       ? '<button class="ib txt sig" data-act="deliver" data-id="' + id + '">' + ic(needsSig(o) ? 'pencil' : 'check', 18) + ' ' + (needsSig(o) ? 'Podpis' : 'Vybavené') + '</button>'
       : '<button class="ib txt sig todo" data-act="pack" data-id="' + id + '">' + ic('box', 18) + ' Zadať balíky</button>';
     var flags = doneChip(o) + (o.incomplete ? '<span class="chip r">Nekompletné</span>' : '') + (o.in_vehicle ? '<span class="chip b">Vo vozidle</span>' : '') + (o.label_printed && o.packages > 0 ? '<span class="chip g">Štítok ✓</span>' : '');
     var sub = (o.city ? '<b class="rw-city">' + esc(o.city) + '</b>' : '') + (o.address ? ' <span>' + esc(o.address) + '</span>' : '') + (o.phone ? ' <span class="rw-ph">· ' + esc(o.phone) + '</span>' : '') + ' <span class="rw-ph">· ' + (isDated(o.channel) ? '' : esc(skDate(o.order_date)) + ' ') + esc(o.time || '') + (o.worker ? ' · ' + esc(o.worker) : '') + '</span>';
-    return '<article class="o rw s-' + stateOf(o) + '" data-row="' + id + '">' +
+    return '<article class="o rw s-' + stateOf(o) + (splitMode() && o.id === state.sel ? ' sel' : '') + '" data-row="' + id + '">' +
       '<input class="chk" type="checkbox" data-sel="' + id + '"' + (state.selected[o.id] ? ' checked' : '') + ' aria-label="Vybrať na tlač štítkov">' +
       '<span class="oid">' + esc(dn(o.id)) + (ba && o.route_pos != null ? '<span class="rn">' + o.route_pos + '</span>' : '') + '</span>' +
       '<div class="rw-main"><div class="rw-l1"><span class="oname">' + esc(o.customer) + '</span>' + (o.goods ? '<span class="bdg goods">Tovar</span>' : '') + dtBadge(o) + payBadge(o) + (o.items > 0 ? '<span class="bdg pay">' + o.items + ' pol.</span>' : '') + flags + '</div><div class="rw-l2">' + sub + '</div>' + (o.mrp_note ? '<div class="rw-note" title="' + esc(o.mrp_note) + '">Pozn.: ' + esc(o.mrp_note) + '</div>' : '') + '</div>' +
@@ -722,11 +745,11 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
       primary + '<button class="ib txt morebtn2" data-act="more" data-id="' + id + '" aria-label="Viac akcií">' + ic('dots', 18) + ' Viac</button></article>';
   }
   function listInner() {
-    var l = visible(); if (!l.length) return emptyHtml();
+    var l = visible(); ensureSel(l); if (!l.length) return emptyHtml();
     if (!listMode()) return l.map(orderHtml).join('');
     return '<div class="rwh"><span></span><span>Číslo</span><span>Zákazník · mesto, ulica</span><span>Balíky</span><span></span><span></span><span></span></div>' + l.map(rowHtml).join('');
   }
-  function refreshList() { var el = document.querySelector('.olist'); if (el) { el.innerHTML = listInner(); el.classList.toggle('tbl', listMode()); } else render(); }
+  function refreshList() { var el = document.querySelector('.olist'); if (el) { el.innerHTML = listInner(); el.classList.toggle('tbl', listMode()); var dt = $('detail'); if (dt && splitMode()) dt.innerHTML = detailInner(); else if (!!dt !== splitMode()) render(); } else render(); }
   function lblBarUpdate() { var b = $('lblbar'); if (!b) return; b.innerHTML = lblBarHtml(); b.className = 'lblbar' + (selectedOrders().length ? ' show' : ''); }
   function openToolMore() {
     var r = function (act, icon, label) { return '<button class="mrow" data-act="' + act + '" data-close="1">' + ic(icon, 20) + ' ' + label + '</button>'; };
@@ -774,7 +797,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
       (o.channel !== 'Okolie' ? '<button class="ib txt" data-act="okolieopen" data-id="' + id + '" title="Tohto zákazníka odteraz automaticky zaraďovať do Okolia">' + ic('car', 18) + ' Do Okolia</button>' : '') +
       (o.channel !== 'Osobný odber' ? '<button class="ib txt" data-act="okolieopen" data-ch="Osobný odber" data-id="' + id + '" title="Tohto zákazníka odteraz automaticky zaraďovať na Osobný odber">' + ic('user', 18) + ' Na Osobný odber</button>' : '') +
       '<button class="ib" data-act="edit" data-id="' + id + '" title="Upraviť" aria-label="Upraviť">' + ic('pencil') + '</button>' +
-      (listMode() ? '<button class="ib txt" data-act="rowtoggle" data-id="' + id + '">' + ic('up', 18) + ' Zbaliť</button>' : '') +
+      (listMode() && !splitMode() ? '<button class="ib txt" data-act="rowtoggle" data-id="' + id + '">' + ic('up', 18) + ' Zbaliť</button>' : '') +
       (canDel ? '<button class="ib del" data-act="del" data-id="' + id + '" title="Zmazať" aria-label="Zmazať">' + ic('trash') + '</button>' : '') + '</div></article>';
   }
   function openMore(id) {
@@ -843,7 +866,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
       '<div class="tb2">' +
       (isBA() ? '<button class="tbtn" data-act="routeopen">' + ic('route', 18) + ' Zoradiť trasu</button>' : '') +
       (url ? '<a class="tbtn blue" href="' + esc(url) + '" target="_blank" rel="noopener">' + ic(isBA() ? 'nav' : 'map', 18) + (isBA() ? ' Navigovať trasu' : ' Mapa') + '</a>' : '') +
-      (drv ? '' : '<button class="tbtn' + (soundOn() ? ' blue' : '') + '" data-act="sound" title="Zvuk pri novej výdajke" aria-pressed="' + (soundOn() ? 'true' : 'false') + '">' + ic('bell', 18) + (soundOn() ? ' Zvuk zap.' : ' Zvuk vyp.') + '</button><button class="tbtn pc" data-act="layout" title="Prepnúť zobrazenie kariet / zoznamu">' + ic(state.layout === 'karty' ? 'list' : 'grid', 18) + (state.layout === 'karty' ? ' Zoznam' : ' Karty') + '</button><button class="tbtn pc" data-act="summary">' + ic('chart', 18) + ' Sumár</button><button class="tbtn pc" data-act="printlist">' + ic('printer', 18) + ' Tlač</button><button class="tbtn pc" data-act="qatoggle">' + ic('plus', 18) + ' Pridať</button><button class="tbtn mob" data-act="toolmore" aria-label="Ďalšie akcie">' + ic('dots', 18) + ' Viac</button>') +
+      (drv ? '' : '<button class="tbtn' + (soundOn() ? ' blue' : '') + '" data-act="sound" title="Zvuk pri novej výdajke" aria-pressed="' + (soundOn() ? 'true' : 'false') + '">' + ic('bell', 18) + (soundOn() ? ' Zvuk zap.' : ' Zvuk vyp.') + '</button><button class="tbtn pc" data-act="layout" title="Prepnúť zobrazenie: rozdelené okno / zoznam / karty">' + ic(state.layout === 'okno' ? 'list' : state.layout === 'zoznam' ? 'grid' : 'grid', 18) + (state.layout === 'okno' ? ' Zoznam' : state.layout === 'zoznam' ? ' Karty' : ' Rozdelené') + '</button><button class="tbtn pc" data-act="summary">' + ic('chart', 18) + ' Sumár</button><button class="tbtn pc" data-act="printlist">' + ic('printer', 18) + ' Tlač</button><button class="tbtn pc" data-act="qatoggle">' + ic('plus', 18) + ' Pridať</button><button class="tbtn mob" data-act="toolmore" aria-label="Ďalšie akcie">' + ic('dots', 18) + ' Viac</button>') +
       '<button class="tbtn" data-act="refresh" aria-label="Obnoviť">' + ic('refresh', 18) + (state.loading ? ' …' : '') + '</button></div></div>';
     if (drv) {
       h += '<div class="kpis"><div class="kpi b"><b>' + visible().length + '</b><span>Zostáva doručiť</span></div></div></section>' + handoverHtml();
@@ -854,7 +877,8 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
         '<button class="fchip legbtn' + (state.legend ? ' on' : '') + '" data-act="legend" aria-label="Legenda farieb">Farby</button></div></div>' + (state.legend ? legend : '') + '</section>';
       h += quickHtml();
     }
-    h += '<div class="olist' + (listMode() ? ' tbl' : '') + '">' + listInner() + '</div>';
+    if (splitMode()) { var lin = listInner(); h += '<div class="split"><div class="olist tbl">' + lin + '</div><aside class="detail" id="detail">' + detailInner() + '</aside></div>'; }
+    else h += '<div class="olist' + (listMode() ? ' tbl' : '') + '">' + listInner() + '</div>';
     if (!drv) h += '<div class="lblbar' + (selectedOrders().length ? ' show' : '') + '" id="lblbar">' + lblBarHtml() + '</div>';
     return h;
   }
@@ -1257,7 +1281,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     }
     if (!act) {
       var t0 = ev.target, rowEl = t0 && t0.closest ? t0.closest('[data-row]') : null;
-      if (rowEl && !t0.closest('a,button,input,select,label')) { var rid = rowEl.getAttribute('data-row'); state.exp[rid] = true; refreshList(); }
+      if (rowEl && !t0.closest('a,button,input,select,label')) { var rid = rowEl.getAttribute('data-row'); if (splitMode()) state.sel = rid; else state.exp[rid] = true; refreshList(); }
       return;
     }
     var id = node.getAttribute('data-id'), v = node.getAttribute('data-v'), o = id ? findOrder(id) : null;
@@ -1330,7 +1354,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     else if (act === 'slip' && o) { patchOrder(id, { slip_printed: !o.slip_printed }, !o.slip_printed ? 'Výdajka ' + id + ' označená ako vytlačená' : 'Označenie vytlačenia zrušené'); }
     else if (act === 'move') { openMove(id); }
     else if (act === 'rowtoggle') { delete state.exp[id]; refreshList(); }
-    else if (act === 'layout') { state.layout = state.layout === 'karty' ? 'zoznam' : 'karty'; try { localStorage.setItem('volf.layout', state.layout); } catch (e) {} render(); }
+    else if (act === 'layout') { state.layout = state.layout === 'okno' ? 'zoznam' : state.layout === 'zoznam' ? 'karty' : 'okno'; try { localStorage.setItem('volf.layout', state.layout); } catch (e) {} render(); }
     else if (act === 'handover') { openHandover(); }
     else if (act === 'handoverok') {
       var hl = chanOrders(), hids = hl.map(function (x) { return x.id; });
@@ -1427,6 +1451,14 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
   });
   document.addEventListener('focusout', function () { if (state.dirty) setTimeout(function () { if (!isTyping()) render(); }, 0); });
   document.addEventListener('keydown', function (ev) {
+    if ((ev.key === 'ArrowDown' || ev.key === 'ArrowUp') && splitMode() && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !isTyping() && !$('modal').innerHTML) {
+      var l = visible(); if (!l.length) return;
+      var i = -1; l.forEach(function (o, k) { if (o.id === state.sel) i = k; });
+      i = Math.max(0, Math.min(l.length - 1, i + (ev.key === 'ArrowDown' ? 1 : -1)));
+      state.sel = l[i].id; state.selIdx = i; ev.preventDefault(); refreshList();
+      var r = document.querySelector('.rw.sel'); if (r && r.scrollIntoView) r.scrollIntoView({ block: 'nearest' });
+      return;
+    }
     if (ev.key !== 'Enter' || !ev.target) return;
     var id = ev.target.id;
     if (id === 'l-pass' || id === 'l-email') doLogin();
