@@ -198,6 +198,9 @@ input:disabled{background:var(--bg);color:var(--mute)}
 .acts2{display:none}
 .slipm.on{background:var(--blue-soft);border-color:#9cc1f1;color:#5a1fa8}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.mnote{margin-top:8px;padding:7px 10px;border-radius:8px;background:#fff6dc;border:1px solid #f0d98a;color:#6b4e00;font-size:13.5px;line-height:1.35;white-space:pre-line;overflow-wrap:anywhere}
+.mnote b{font-weight:700}
+.rw-note{margin-top:3px;font-size:13px;color:#8a6200;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--bg);border:1px solid var(--line);color:#4b5668}
 .chip.g{background:#e7f7ee;border-color:#9bd9b5;color:#17713f}.chip.p{background:#efe7ff;border-color:#b59af5;color:#5b34c4}.chip.b{background:var(--blue-soft);border-color:#9cc1f1;color:var(--blue)}.chip.r{background:var(--red-soft);border-color:#eba7aa;color:var(--red)}
 .mrow.on{background:var(--blue-soft);border-color:#9cc1f1}.mrow.del{color:var(--red)}
@@ -658,7 +661,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
   function sortedChan() { var l = chanOrders(); return isBA() ? l.slice().sort(routeCmp) : l; }
   function searchOk(o) {
     var q = plain(state.q || '').trim(); if (!q) return true;
-    return plain([o.id, o.customer, o.company_name, o.address, o.city, o.zip, o.phone, o.note].join(' ')).indexOf(q) >= 0;
+    return plain([o.id, o.customer, o.company_name, o.address, o.city, o.zip, o.phone, o.note, o.mrp_note].join(' ')).indexOf(q) >= 0;
   }
   function visible() { return sortedChan().filter(function (o) { return matches(o); }).filter(searchOk); }
   function stateOf(o) { return o.incomplete ? 'inc' : o.in_vehicle ? 'veh' : o.slip_printed ? 'slip' : o.label_printed ? 'lbl' : o.packages > 0 ? 'vyd' : 'none'; }
@@ -695,6 +698,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
   function emptyHtml() {
     return '<div class="empty">' + (state.orders.length ? (state.filter !== 'all' || state.q ? 'Žiadna výdajka pre vybraný filter alebo hľadanie. <button class="tbtn" data-act="clearf">Zrušiť filter</button>' : 'V tomto kanáli nie sú žiadne výdajky.') : 'Na tento deň zatiaľ nie sú žiadne výdajky. Zobrazia sa, keď ich pomocný program z MRP odošle, alebo ich pridajte ručne.') + '</div>';
   }
+  function mnoteHtml(o) { return o.mrp_note ? '<div class="mnote"><b>Poznámka z MRP:</b> ' + esc(o.mrp_note) + '</div>' : ''; }
   function doneChip(o) {
     if (!o.mrp_done_reason || o.delivered) return '';
     var what = o.mrp_done_reason === 'faktúra' ? 'faktúru' : 'fiškál (pohyb 8)';
@@ -712,7 +716,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     return '<article class="o rw s-' + stateOf(o) + '" data-row="' + id + '">' +
       '<input class="chk" type="checkbox" data-sel="' + id + '"' + (state.selected[o.id] ? ' checked' : '') + ' aria-label="Vybrať na tlač štítkov">' +
       '<span class="oid">' + esc(dn(o.id)) + (ba && o.route_pos != null ? '<span class="rn">' + o.route_pos + '</span>' : '') + '</span>' +
-      '<div class="rw-main"><div class="rw-l1"><span class="oname">' + esc(o.customer) + '</span>' + (o.goods ? '<span class="bdg goods">Tovar</span>' : '') + dtBadge(o) + payBadge(o) + (o.items > 0 ? '<span class="bdg pay">' + o.items + ' pol.</span>' : '') + flags + '</div><div class="rw-l2">' + sub + '</div></div>' +
+      '<div class="rw-main"><div class="rw-l1"><span class="oname">' + esc(o.customer) + '</span>' + (o.goods ? '<span class="bdg goods">Tovar</span>' : '') + dtBadge(o) + payBadge(o) + (o.items > 0 ? '<span class="bdg pay">' + o.items + ' pol.</span>' : '') + flags + '</div><div class="rw-l2">' + sub + '</div>' + (o.mrp_note ? '<div class="rw-note" title="' + esc(o.mrp_note) + '">Pozn.: ' + esc(o.mrp_note) + '</div>' : '') + '</div>' +
       '<button class="pk' + (o.packages > 0 ? ' has' : '') + '" data-act="pack" data-id="' + id + '" title="Zadať balíky a skladníka" aria-label="Balíky: ' + (o.packages || 0) + '">' + (o.packages || 0) + '</button>' +
       '<button class="ib txt slipb' + (o.slip_printed ? ' on' : '') + '" data-act="slip" data-id="' + id + '" title="Len označenie pre ostatných skladníkov, nič sa netlačí" aria-pressed="' + (o.slip_printed ? 'true' : 'false') + '">' + ic('file', 18) + '<span class="l"> Výdaj vytlačený' + (o.slip_printed ? ' ✓' : '?') + '</span><span class="s"> Výdaj' + (o.slip_printed ? ' ✓' : '?') + '</span></button>' +
       primary + '<button class="ib txt morebtn2" data-act="more" data-id="' + id + '" aria-label="Viac akcií">' + ic('dots', 18) + ' Viac</button></article>';
@@ -752,7 +756,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
       '<span>' + (isDated(o.channel) ? '' : esc(skDate(o.order_date)) + ' ') + esc(o.time || '') + (o.worker && !drv ? ' · ' + esc(o.worker) : '') + '</span>' +
       (o.note ? '<span>Poznámka: ' + esc(o.note) + '</span>' : '') +
       (o.company_name && plain(o.company_name) !== plain(o.customer) ? '<span class="co">Odberateľ: ' + esc(o.company_name) + '</span>' : '') + '</div>' +
-      (chips ? '<div class="chips">' + chips + '</div>' : '');
+      mnoteHtml(o) + (chips ? '<div class="chips">' + chips + '</div>' : '');
     if (drv) return head + '<div class="acts big">' + navBtn(true) + (isReady(o) ? doneBtn(true) : '<button class="ib txt sig big needpack" data-act="needpack">Čaká na balíky</button>') + '</div></article>';
     var packed = o.packages > 0 && !!o.worker;
     var primary = packed ? doneBtn(true) : '<button class="ib txt sig big todo" data-act="pack" data-id="' + id + '" title="Zadať balíky a skladníka">' + ic('box', 18) + ' Zadať balíky</button>';
@@ -868,7 +872,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
         payBadge(o) + (o.auto_reason ? '<span class="chip b">Auto: ' + esc(o.auto_reason) + '</span>' : '') + '</div>' +
         '<div class="r2"><span>' + (addr ? esc(addr) : 'bez adresy') + '</span>' + (o.phone ? '<span>' + esc(o.phone) + '</span>' : '') +
         '<span>Vybavené ' + esc(when) + '</span><span>Balíky: ' + (o.packages || 0) + (o.worker ? ' · ' + esc(o.worker) : '') + '</span>' +
-        (o.note ? '<span>Poznámka: ' + esc(o.note) + '</span>' : '') + '</div>' +
+        (o.note ? '<span>Poznámka: ' + esc(o.note) + '</span>' : '') + '</div>' + mnoteHtml(o) +
         '<div class="acts"><button class="btn ghost small" data-act="undeliver" data-id="' + esc(o.id) + '">' + ic('undo', 16) + ' Vrátiť do rozvozu</button>' +
         (o.signed ? '<button class="btn ghost small" data-act="showsig" data-id="' + esc(o.id) + '">' + ic('pencil', 16) + ' Podpis</button>' : '') + '</div></article>';
     }).join('') + '</div>';
@@ -966,6 +970,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
       '<div class="fld"><label for="e-phone">Telefón</label><input type="text" id="e-phone" inputmode="tel" value="' + esc(o.phone || '') + '"' + lock + '></div>' +
       '<div class="qa-grid" style="margin-top:0"><div class="fld"><label for="e-pay">Úhrada</label><select id="e-pay">' + payOpts(o.payment) + '</select></div>' +
       '<div class="fld"><label for="e-sum">Suma €</label><input type="number" id="e-sum" min="0" step="0.01" inputmode="decimal" value="' + esc(o.amount) + '"></div></div>' +
+      (o.mrp_note ? '<div class="mnote" style="margin:0 0 10px"><b>Poznámka z MRP:</b> ' + esc(o.mrp_note) + '</div>' : '') +
       '<div class="fld"><label class="chkrow"><input type="checkbox" id="e-goods"' + (o.goods ? ' checked' : '') + '> Tovar (vrátenie / výmena)</label></div>' +
       '<div class="fld"><label for="e-note">Poznámka</label><textarea id="e-note">' + esc(o.note || '') + '</textarea></div>' +
       '<div class="row"><button class="btn grow" data-act="saveedit" data-id="' + esc(o.id) + '">Uložiť</button><button class="btn ghost" data-act="close">Zrušiť</button></div>');
