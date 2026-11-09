@@ -199,6 +199,7 @@ input:disabled{background:var(--bg);color:var(--mute)}
 .slipm.on{background:var(--blue-soft);border-color:#9cc1f1;color:#5a1fa8}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .syncwarn{margin:10px 0 0;padding:10px 14px;border-radius:10px;background:#fdecec;border:1px solid #eba7aa;color:#8c1d22;font-weight:600;font-size:14px}
+.pastwarn{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.pastwarn span{flex:1 1 260px}
 .sh{cursor:pointer;user-select:none}.sh:hover{color:var(--ink)}.sh.on{color:var(--blue)}
 .chip.y{background:#fff3cd;border-color:#f0d98a;color:#7a5b00}
 .usr .w small{display:block;color:var(--mute);font-weight:400}
@@ -496,7 +497,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
   });
 
   var state = {
-    layout: (function () { var d = window.innerWidth >= 900 ? 'okno' : 'zoznam'; try { var v = localStorage.getItem('volf.layout2'); return (v === 'okno' || v === 'zoznam' || v === 'karty') ? v : d; } catch (e) { return d; } })(), exp: {}, sel: null, selIdx: 0, sort: null, sync: null, syncStale: false, users: null,
+    layout: (function () { var d = window.innerWidth >= 900 ? 'okno' : 'zoznam'; try { var v = localStorage.getItem('volf.layout2'); return (v === 'okno' || v === 'zoznam' || v === 'karty') ? v : d; } catch (e) { return d; } })(), exp: {}, sel: null, selIdx: 0, sort: null, sync: null, syncStale: false, users: null, past: [],
     orders: [], workers: [], okolie: [], stats: null, rw: { month: todayStr().slice(0, 7), orders: [], recs: [], busy: false },
     date: todayStr(), arch: [], archDate: todayStr(), archChan: 'all', archQ: '', channel: 'Rozvoz BA', filter: 'all', selected: {}, view: 'rozvoz',
     q: '', legend: false, session: null, isAdmin: false, isStaff: false, isDriver: false, loading: true, error: '', pendingView: null, quickOpen: false, dirty: false,
@@ -529,6 +530,18 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
         throw new Error(String(msg).slice(0, 180));
       });
     });
+  }
+  var PAST_CH = '(' + encodeURIComponent('"Rozvoz BA","FaxCopy"') + ')';
+  function loadPast() {
+    if (state.isDriver) { state.past = []; return Promise.resolve(); }
+    return api('/rest/v1/mrp_orders?select=id,channel,order_date&delivered=eq.false&order_date=lt.' + todayStr() + '&channel=in.' + PAST_CH + '&order=order_date.asc&limit=500').then(function (rows) { state.past = rows || []; }).catch(function () { state.past = []; });
+  }
+  function dayOrNext(t) { var d = new Date(t + 'T00:00:00Z'); return (d.getUTCDay() === 0 || d.getUTCDay() === 6 || isHoliday(d)) ? nextWorkday(t) : t; }
+  function pastBanner() {
+    if (state.isDriver || !state.past.length) return '';
+    var ba = state.past.filter(function (o) { return o.channel === 'Rozvoz BA'; }).length, fx = state.past.length - ba;
+    return '<div class="syncwarn pastwarn" role="alert"><span>⚠ ' + state.past.length + ' nevybavených výdajok z minulých dní (' + [ba ? 'BA ' + ba : '', fx ? 'FaxCopy ' + fx : ''].filter(Boolean).join(', ') + ').</span>' +
+      '<button class="btn small" data-act="pastmove">Presunúť na ' + (dayOrNext(todayStr()) === todayStr() ? 'dnes' : esc(skDate(dayOrNext(todayStr())))) + '</button><button class="btn ghost small" data-act="pastshow">Zobraziť</button></div>';
   }
   function loadOrders() {
     return api('/rest/v1/mrp_orders?select=*&delivered=eq.false&or=' + encodeURIComponent('(order_date.eq.' + state.date + ',channel.in.("Osobný odber","Kuriér","Okolie"))') + '&order=order_date.desc,time.asc,id.asc&limit=1000').then(function (rows) { state.orders = rows || []; });
@@ -636,7 +649,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
   function isTyping() { var a = document.activeElement; return !!(a && a.closest && a.closest('#app') && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)); }
   function reloadAll(silent) {
     if (!silent) { state.loading = true; render(); }
-    var jobs = [loadOrders(), loadWorkers(), loadOkolie()];
+    var jobs = [loadOrders(), loadWorkers(), loadOkolie(), loadPast()];
     if (state.view === 'statistiky') jobs.push(loadStats());
     if (state.view === 'archiv') jobs.push(loadArch());
     return Promise.all(jobs).then(function () { state.error = ''; })
@@ -911,7 +924,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
   function rozvozHtml() {
     var drv = state.isDriver, url = mapsUrl(sortedChan());
     var legend = '<div class="legend"><span><i style="background:#fff"></i>bez balíkov</span><span><i style="background:#fff9ec;border-color:#f5a623"></i>výdajka</span><span><i style="background:#effaf3;border-color:#2fb36a"></i>štítok</span><span><i style="background:#f5f0ff;border-color:#8b5cf6"></i>výdaj vytlačený</span><span><i style="background:#eef4ff;border-color:#3b82f6"></i>vo vozidle</span><span><i style="background:#fff2f2;border-color:#e5484d"></i>nekompletné</span></div>';
-    var h = syncBanner() + '<section class="card"><div class="tb1">' + (isDated() ? '<button class="sq" data-act="dprev" aria-label="Predchádzajúci deň">' + ic('left', 20) + '</button>' +
+    var h = syncBanner() + pastBanner() + '<section class="card"><div class="tb1">' + (isDated() ? '<button class="sq" data-act="dprev" aria-label="Predchádzajúci deň">' + ic('left', 20) + '</button>' +
       '<input type="date" id="dt" value="' + esc(state.date) + '" aria-label="Dátum"><button class="sq" data-act="dnext" aria-label="Nasledujúci deň">' + ic('right', 20) + '</button>' +
       '<span class="dlabel">' + dateLabel() + '</span>' : '<span class="dlabel"><b>' + esc(state.channel) + '</b> · všetky výdajky bez ohľadu na dátum</span>') +
       '<div class="tb2">' +
@@ -1531,6 +1544,16 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     else if (act === 'qaadd') { quickAdd(); }
     else if (act === 'dologin') { doLogin(); }
     else if (act === 'addworker') { addWorker(); }
+    else if (act === 'pastmove') {
+      var target = dayOrNext(todayStr());
+      api('/rest/v1/mrp_orders?delivered=eq.false&order_date=lt.' + todayStr() + '&channel=in.' + PAST_CH, { method: 'PATCH', body: { order_date: target }, prefer: 'return=minimal' })
+        .then(function () { var n = state.past.length; state.date = target; return reloadAll(false).then(function () { toast('Presunutých výdajok: ' + n); }); })
+        .catch(function (e) { toast('Nepodarilo sa presunúť: ' + e.message); });
+    }
+    else if (act === 'pastshow') {
+      var f = state.past[0]; if (!f) return;
+      state.channel = f.channel; state.date = f.order_date; state.filter = 'all'; state.q = ''; state.sort = null; state.selected = {}; reloadAll(false);
+    }
     else if (act === 'usradd') {
       userCall({ action: 'create', email: $('u-email').value, role: $('u-role').value, password: $('u-pass').value }).then(loadUsers).then(function () { render(); toast('Používateľ pridaný'); }).catch(function (e) { toast(e.message); });
     }

@@ -972,14 +972,14 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
   function loadUsers() { return userCall({ action: 'list' }).then(function (j) { state.users = j.users || []; }); }
   var ROLE_LABEL = { admin: 'Správca', sklad: 'Sklad', vodic: 'Vodič' };
   function usersHtml() {
-    var h = '<div class="card"><h3>Pridať používateľa</h3><p class="hint">Heslo musí mať aspoň 10 znakov a obsahovať písmeno aj číslicu.</p><div class="addrow"><input class="grow" type="email" id="u-email" placeholder="E-mail" autocomplete="off"><select id="u-role" aria-label="Rola"><option value="sklad">Sklad</option><option value="vodic">Vodič</option></select><input class="grow" type="text" id="u-pass" placeholder="Heslo" autocomplete="off"><button class="btn" data-act="usradd">Pridať</button></div></div>' +
+    var h = '<div class="card"><h3>Pridať používateľa</h3><p class="hint">Heslo musí mať aspoň 10 znakov a obsahovať písmeno aj číslicu. Správca má prístup k celej Správe vrátane používateľov.</p><div class="addrow"><input class="grow" type="email" id="u-email" placeholder="E-mail" autocomplete="off"><select id="u-role" aria-label="Rola"><option value="sklad">Sklad</option><option value="vodic">Vodič</option><option value="admin">Správca</option></select><input class="grow" type="text" id="u-pass" placeholder="Heslo" autocomplete="off"><button class="btn" data-act="usradd">Pridať</button></div></div>' +
       '<div class="card usr wl"><h3>Používatelia</h3>';
     if (state.users === null) h += '<div class="empty">Načítavam…</div>';
     else state.users.forEach(function (u) {
       var last = u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString('sk-SK', { timeZone: 'Europe/Bratislava', day: 'numeric', month: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'ešte sa neprihlásil';
       var adm = u.role === 'admin';
       h += '<div class="w"><div><b>' + esc(u.email) + '</b><span class="rolebadge">' + esc(ROLE_LABEL[u.role] || u.role) + '</span><small>Posledné prihlásenie: ' + esc(last) + '</small></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">' +
-        (adm ? '' : '<button class="btn ghost small" data-act="usrrole" data-id="' + esc(u.id) + '" data-v="' + (u.role === 'vodic' ? 'sklad' : 'vodic') + '">Zmeniť na: ' + (u.role === 'vodic' ? 'Sklad' : 'Vodič') + '</button>') +
+        (u.me ? '' : ['admin', 'sklad', 'vodic'].filter(function (r) { return r !== u.role; }).map(function (r) { return '<button class="btn ghost small" data-act="usrrole" data-id="' + esc(u.id) + '" data-v="' + r + '">' + (r === 'admin' ? 'Urobiť správcom' : 'Zmeniť na: ' + ROLE_LABEL[r]) + '</button>'; }).join('')) +
         (adm && !u.me ? '' : '<button class="btn ghost small" data-act="usrpw" data-id="' + esc(u.id) + '" data-name="' + esc(u.email) + '">Nové heslo</button>') +
         (adm ? '' : '<button class="btn danger small" data-act="usrdel" data-id="' + esc(u.id) + '" data-name="' + esc(u.email) + '">Zmazať</button>') + '</div></div>';
     });
