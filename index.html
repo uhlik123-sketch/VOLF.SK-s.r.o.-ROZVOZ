@@ -627,6 +627,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     var x = a.route_pos == null ? 1e9 : a.route_pos, y = b.route_pos == null ? 1e9 : b.route_pos;
     return (x - y) || String(a.time || '').localeCompare(String(b.time || '')) || String(a.id).localeCompare(String(b.id));
   }
+  function needsSig(o) { return o.channel === 'Rozvoz BA' || o.channel === 'Okolie'; }
   function isBA(k) { return (k || state.channel) === 'Rozvoz BA'; }
   function sortedChan() { var l = chanOrders(); return isBA() ? l.slice().sort(routeCmp) : l; }
   function searchOk(o) {
@@ -678,7 +679,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     if (state.exp[o.id]) return orderHtml(o);
     var id = esc(o.id), packed = isReady(o), ba = o.channel === 'Rozvoz BA';
     var primary = packed
-      ? '<button class="ib txt sig" data-act="deliver" data-id="' + id + '">' + ic(ba ? 'pencil' : 'check', 18) + ' ' + (ba ? 'Podpis' : 'Vybavené') + '</button>'
+      ? '<button class="ib txt sig" data-act="deliver" data-id="' + id + '">' + ic(needsSig(o) ? 'pencil' : 'check', 18) + ' ' + (needsSig(o) ? 'Podpis' : 'Vybavené') + '</button>'
       : '<button class="ib txt sig todo" data-act="pack" data-id="' + id + '">' + ic('box', 18) + ' Zadať balíky</button>';
     var flags = doneChip(o) + (o.incomplete ? '<span class="chip r">Nekompletné</span>' : '') + (o.in_vehicle ? '<span class="chip b">Vo vozidle</span>' : '') + (o.label_printed && o.packages > 0 ? '<span class="chip g">Štítok ✓</span>' : '');
     var sub = (o.city ? '<b class="rw-city">' + esc(o.city) + '</b>' : '') + (o.address ? ' <span>' + esc(o.address) + '</span>' : '') + (o.phone ? ' <span class="rw-ph">· ' + esc(o.phone) + '</span>' : '') + ' <span class="rw-ph">· ' + (isDated(o.channel) ? '' : esc(skDate(o.order_date)) + ' ') + esc(o.time || '') + (o.worker ? ' · ' + esc(o.worker) : '') + '</span>';
@@ -708,8 +709,8 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     var canDel = o.source === 'manual' || state.isAdmin;
     var ba = o.channel === 'Rozvoz BA';
     var navBtn = function (big) { return '<a class="ib txt nav' + (big ? ' big' : '') + '" href="' + esc(navUrl(o)) + '" target="_blank" rel="noopener" title="Navigovať na túto adresu">' + ic('nav', 18) + ' Navigovať</a>'; };
-    var doneLabel = ba ? 'Podpis / Vybavené' : 'Vybavené';
-    var doneBtn = function (big) { return '<button class="ib txt sig' + (big ? ' big' : '') + '" data-act="deliver" data-id="' + id + '" title="' + (ba ? 'Podpis zákazníka a vybavenie' : 'Označiť ako vybavené') + '">' + ic(ba ? 'pencil' : 'check', 18) + ' ' + doneLabel + '</button>'; };
+    var sg = needsSig(o), doneLabel = sg ? 'Podpis / Vybavené' : 'Vybavené';
+    var doneBtn = function (big) { return '<button class="ib txt sig' + (big ? ' big' : '') + '" data-act="deliver" data-id="' + id + '" title="' + (sg ? 'Podpis zákazníka a vybavenie' : 'Označiť ako vybavené') + '">' + ic(sg ? 'pencil' : 'check', 18) + ' ' + doneLabel + '</button>'; };
     var chips = (o.label_printed && o.packages > 0 ? '<span class="chip g">Štítok ✓</span>' : '') + (o.slip_printed ? '<span class="chip p">Výdaj vytlačený</span>' : '') + (o.in_vehicle ? '<span class="chip b">Vo vozidle</span>' : '') + (o.incomplete ? '<span class="chip r">Nekompletné</span>' : '') + doneChip(o);
     var head = '<article class="o s-' + st + (o.delivered ? ' done' : '') + (drv ? ' drv' : '') + '">' +
       '<div class="r1">' + (drv ? '' : '<input class="chk" type="checkbox" data-sel="' + id + '"' + (state.selected[o.id] ? ' checked' : '') + ' aria-label="Vybrať na tlač štítkov">') +
@@ -1285,7 +1286,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     else if (act === 'showsig') { showSign(id); }
     else if (act === 'needpack') { toast('Výdajka ešte nemá zadané balíky a skladníka'); }
     else if (act === 'deliver' && o && !o.delivered && !isReady(o)) { if (state.isDriver) toast('Výdajka ešte nemá zadané balíky'); else { toast('Najprv zadajte počet balíkov a skladníka'); openPack(id); } }
-    else if (act === 'deliver' && o && o.channel === 'Rozvoz BA' && !o.delivered) { openSign(id); }
+    else if (act === 'deliver' && o && needsSig(o) && !o.delivered) { openSign(id); }
     else if (act === 'deliver' && o) { patchOrder(id, { delivered: !o.delivered, delivered_at: !o.delivered ? new Date().toISOString() : null }, 'Výdajka ' + id + ' presunutá do archívu'); }
     else if (act === 'mode') {
       state.isDriver = !state.isDriver; store('volf.mode', state.isDriver ? 'vodic' : 'sklad'); state.view = 'rozvoz'; state.selected = {}; closeModal(); render();
