@@ -782,7 +782,11 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
   function doneChip0(o) {
     if (!o.mrp_done_reason || o.delivered) return '';
     var what = o.mrp_done_reason === 'faktúra' ? 'faktúru' : 'fiškál (pohyb 8)';
-    return isReady(o) ? '<span class="chip b">Už má ' + what + ' · do archívu automaticky</span>' : '<span class="chip r">⚠ Už má ' + what + ' · zadajte balíky</span>';
+    return (isReady(o) || o.channel === 'Kuriér' || o.channel === 'Osobný odber') ? '<span class="chip b">Už má ' + what + ' · do archívu automaticky</span>' : '<span class="chip r">⚠ Už má ' + what + ' · zadajte balíky</span>';
+  }
+  function dlBtn(o, big) {
+    if (o.delivered || o.channel !== 'Osobný odber' || state.isDriver) return '';
+    return '<button class="ib txt sig dl' + (big ? ' big' : '') + '" data-act="dl" data-id="' + esc(o.id) + '" title="Zákazník si prevzal tovar na dodací list – výdajka ide hneď do archívu">' + ic('check', 18) + ' Odovzdané na DL</button>';
   }
   function splitMode() { return !state.isDriver && state.layout === 'okno' && window.innerWidth >= 900; }
   function ensureSel(l) {
@@ -811,7 +815,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
       '<div class="rw-main"><div class="rw-l1"><span class="oname">' + esc(o.customer) + '</span>' + (o.goods ? '<span class="bdg goods">Tovar</span>' : '') + dtBadge(o) + payBadge(o) + (o.items > 0 ? '<span class="bdg pay">' + o.items + ' pol.</span>' : '') + flags + '</div><div class="rw-l2">' + sub + '</div>' + (o.mrp_note ? '<div class="rw-note" title="' + esc(o.mrp_note) + '">Pozn.: ' + esc(o.mrp_note) + '</div>' : '') + '</div>' +
       '<button class="pk' + (o.packages > 0 ? ' has' : '') + '" data-act="pack" data-id="' + id + '" title="Zadať balíky a skladníka" aria-label="Balíky: ' + (o.packages || 0) + '">' + (o.packages || 0) + '</button>' +
       '<button class="ib txt slipb' + (o.slip_printed ? ' on' : '') + '" data-act="slip" data-id="' + id + '" title="Len označenie pre ostatných skladníkov, nič sa netlačí" aria-pressed="' + (o.slip_printed ? 'true' : 'false') + '">' + ic('file', 18) + '<span class="l"> Výdaj vytlačený' + (o.slip_printed ? ' ✓' : '?') + '</span><span class="s"> Výdaj' + (o.slip_printed ? ' ✓' : '?') + '</span></button>' +
-      primary + '<button class="ib txt morebtn2" data-act="more" data-id="' + id + '" aria-label="Viac akcií">' + ic('dots', 18) + ' Viac</button></article>';
+      dlBtn(o, false) + primary + '<button class="ib txt morebtn2" data-act="more" data-id="' + id + '" aria-label="Viac akcií">' + ic('dots', 18) + ' Viac</button></article>';
   }
   function listInner() {
     var l = visible(); ensureSel(l); if (!l.length) return emptyHtml();
@@ -854,7 +858,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     var primary = packed ? doneBtn(true) : '<button class="ib txt sig big todo" data-act="pack" data-id="' + id + '" title="Zadať balíky a skladníka">' + ic('box', 18) + ' Zadať balíky</button>';
     var more = function (act, icon, label, on, extra) { return '<button class="mrow' + (on ? ' on' : '') + '" data-act="' + act + '" data-id="' + id + '"' + (extra || '') + '>' + ic(icon, 20) + ' ' + label + '</button>'; };
     return head +
-      '<div class="acts">' + primary + (ba ? navBtn(false) : '') +
+      '<div class="acts">' + dlBtn(o, true) + primary + (ba ? navBtn(false) : '') +
       '<button class="ib txt slipm' + (o.slip_printed ? ' on' : '') + '" data-act="slip" data-id="' + id + '" title="Len označenie pre ostatných skladníkov, nič sa netlačí" aria-pressed="' + (o.slip_printed ? 'true' : 'false') + '">' + ic('file', 18) + (o.slip_printed ? ' Výdaj vytlačený ✓' : ' Výdaj vytlačený?') + '</button>' +
       '<button class="ib txt morebtn" data-act="more" data-id="' + id + '" aria-label="Viac akcií">' + ic('dots', 18) + ' Viac</button></div>' +
       '<div class="acts2">' +
@@ -1464,6 +1468,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     else if (act === 'dosign') { saveSign(id); }
     else if (act === 'showsig') { showSign(id); }
     else if (act === 'needpack') { toast('Výdajka ešte nemá zadané balíky a skladníka'); }
+    else if (act === 'dl' && o && !o.delivered) { patchOrder(id, { delivered: true, delivered_at: new Date().toISOString() }, 'Výdajka ' + id + ' odovzdaná na DL a presunutá do archívu'); }
     else if (act === 'deliver' && o && !o.delivered && !isReady(o)) { if (state.isDriver) toast('Výdajka ešte nemá zadané balíky'); else { toast('Najprv zadajte počet balíkov a skladníka'); openPack(id); } }
     else if (act === 'deliver' && o && needsSig(o) && !o.delivered) { openSign(id); }
     else if (act === 'deliver' && o) { patchOrder(id, { delivered: !o.delivered, delivered_at: !o.delivered ? new Date().toISOString() : null }, 'Výdajka ' + id + ' presunutá do archívu'); }
