@@ -209,6 +209,7 @@ input:disabled{background:var(--bg);color:var(--mute)}
 .mnote{margin-top:8px;padding:7px 10px;border-radius:8px;background:#fff6dc;border:1px solid #f0d98a;color:#6b4e00;font-size:13.5px;line-height:1.35;white-space:pre-line;overflow-wrap:anywhere}
 .mnote b{font-weight:700}
 .rw-note{margin-top:3px;font-size:13px;color:#8a6200;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+button.chip{cursor:pointer;font-family:inherit}
 .chip{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--bg);border:1px solid var(--line);color:#4b5668}
 .chip.g{background:#e7f7ee;border-color:#9bd9b5;color:#17713f}.chip.p{background:#efe7ff;border-color:#b59af5;color:#5b34c4}.chip.b{background:var(--blue-soft);border-color:#9cc1f1;color:var(--blue)}.chip.r{background:var(--red-soft);border-color:#eba7aa;color:var(--red)}
 .mrow.on{background:var(--blue-soft);border-color:#9cc1f1}.mrow.del{color:var(--red)}
@@ -771,8 +772,12 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     if (!(h >= 2)) return '';
     return '<span class="chip r" title="Výdajka čaká na zadanie balíkov">Bez balíkov ' + (h >= 24 ? Math.floor(h / 24) + ' d' : Math.floor(h) + ' h') + '</span>';
   }
+  function missChip(o) {
+    if (!o.mrp_missing_since || o.delivered) return '';
+    return '<button class="chip r" data-act="del" data-id="' + esc(o.id) + '" title="Výdajka už v MRP nie je (zmazaná alebo stornovaná). Kliknutím ju zmažete aj z aplikácie.">⚠ Zmazaná v MRP · zmazať</button>';
+  }
   function doneChip(o) {
-    return doneChip0(o) + amtChip(o) + waitChip(o);
+    return missChip(o) + doneChip0(o) + amtChip(o) + waitChip(o);
   }
   function doneChip0(o) {
     if (!o.mrp_done_reason || o.delivered) return '';
