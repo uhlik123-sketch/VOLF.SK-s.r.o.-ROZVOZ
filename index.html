@@ -1003,7 +1003,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
       var adm = u.role === 'admin';
       h += '<div class="w"><div><b>' + esc(u.email) + '</b><span class="rolebadge">' + esc(ROLE_LABEL[u.role] || u.role) + '</span><small>Posledné prihlásenie: ' + esc(last) + '</small></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">' +
         (u.me ? '' : ['admin', 'sklad', 'vodic'].filter(function (r) { return r !== u.role; }).map(function (r) { return '<button class="btn ghost small" data-act="usrrole" data-id="' + esc(u.id) + '" data-v="' + r + '">' + (r === 'admin' ? 'Urobiť správcom' : 'Zmeniť na: ' + ROLE_LABEL[r]) + '</button>'; }).join('')) +
-        (adm && !u.me ? '' : '<button class="btn ghost small" data-act="usrpw" data-id="' + esc(u.id) + '" data-name="' + esc(u.email) + '">Nové heslo</button>') +
+        (u.me ? '<button class="btn ghost small" data-act="ownpw">Zmeniť moje heslo</button>' : (adm ? '' : '<button class="btn ghost small" data-act="usrpw" data-id="' + esc(u.id) + '" data-name="' + esc(u.email) + '">Nové heslo</button>')) +
         (adm ? '' : '<button class="btn danger small" data-act="usrdel" data-id="' + esc(u.id) + '" data-name="' + esc(u.email) + '">Zmazať</button>') + '</div></div>';
     });
     return h + '</div>';
@@ -1063,7 +1063,6 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     $('app').innerHTML = '<header class="top"><div class="top1"><div class="logo"><span class="mark">' + ic('truck', 24) + '</span><span class="brand"><b>VOLF SK, s.r.o.</b><small>Rozvoz</small></span></div><div class="sp"></div>' +
       (state.isDriver ? '' : '<button class="hbtn" data-act="menu">' + ic('sliders', 18) + '<span class="t">Správa</span></button>') +
       '<button class="hbtn' + (state.isDriver ? ' on' : '') + '" data-act="mode" title="Prepnúť zobrazenie sklad / vodič">' + ic(state.isDriver ? 'user' : 'truck', 18) + '<span class="t">' + (state.isDriver ? 'Vodič' : 'Sklad') + '</span></button>' +
-      '<button class="hbtn" data-act="ownpw" aria-label="Zmeniť heslo" title="Zmeniť moje heslo">' + ic('key', 18) + '</button>' +
       '<button class="hbtn" data-act="logout" aria-label="Odhlásiť">' + ic('logout', 18) + '</button>' +
       '</div><nav class="chan" aria-label="Kanály">' + tabs + '</nav></header><main>' + (state.error ? '<div class="err">' + esc(state.error) + '</div>' : '') + sub + body + '</main>';
     state.dirty = false;
