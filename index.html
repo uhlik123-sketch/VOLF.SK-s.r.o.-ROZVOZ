@@ -380,6 +380,20 @@ button.chip{border-width:1px}
 .o .vehb{width:56px;height:60px;padding:0;justify-content:center;display:inline-flex;align-items:center}
 .o .vehb.on{background:var(--blue);border-color:var(--blue);color:#fff}
 .o .ib.lblst,.o .slipm.lblst,.o .slipm.on.lblst{pointer-events:none;cursor:default;background:#e8f9fb;border-color:#14b8c4;color:#0b6f78}
+.o.drv{padding:8px 10px;margin-bottom:8px}
+.o.drv .r1{gap:4px 8px}
+.o.drv .oid{font-size:15px}
+.o.drv .oname{font-size:18px;line-height:1.1}
+.o.drv .r1x{margin-top:0}
+.o.drv .pk{min-width:50px;height:44px;font-size:24px;border-radius:10px}
+.o.drv .pk small{font-size:9px}
+.o.drv .vehb{width:44px;height:44px}
+.o.drv .r2{margin-top:4px;font-size:13px;gap:2px 10px}
+.o.drv .rw-note,.o.drv .mnote{margin-top:4px;padding:3px 7px;font-size:12px;line-height:1.25}
+.o.drv .chips{margin-top:4px}
+.o.drv .acts.big{margin-top:6px;gap:6px}
+.o.drv .acts.big .ib.big{height:44px;font-size:15px}
+.o.drv .acts.big .ib.big.vehbig{flex:0 0 auto}
 </style>
 </head>
 <body>
@@ -893,7 +907,7 @@ button.chip{border-width:1px}
       '<span class="oid">' + esc(dn(o.id)) + '</span><span class="oname">' + esc(o.customer) + '</span>' +
       (o.goods ? '<span class="bdg goods">Tovar</span>' : '') +
       '</div><div class="r1x"><div class="tg">' + payBadge(o) + dtBadge(o) + (o.items > 0 ? '<span class="bdg pol">' + o.items + ' pol.</span>' : '') + (o.source === 'mrp' ? '' : '<span class="bdg m">ručne</span>') + '</div><div class="pv">' +
-      (drv ? '' : '<button class="ib vehb' + (o.in_vehicle ? ' on' : '') + '" data-act="veh" data-id="' + id + '" title="Vo vozidle" aria-label="Vo vozidle" aria-pressed="' + (o.in_vehicle ? 'true' : 'false') + '">' + ic('truck', 22) + '</button>') +
+      ('<button class="ib vehb' + (o.in_vehicle ? ' on' : '') + '" data-act="veh" data-id="' + id + '" title="Vo vozidle" aria-label="Vo vozidle" aria-pressed="' + (o.in_vehicle ? 'true' : 'false') + '">' + ic('truck', 22) + '</button>') +
       (drv ? '<span class="pk static' + (o.packages > 0 ? ' has' : '') + '" aria-label="Balíky: ' + (o.packages || 0) + '">' + (o.packages || 0) + '<small>' + (o.packages > 0 ? 'balíkov' : 'chýbajú') + '</small></span>' : '<button class="pk' + (o.packages > 0 ? ' has' : '') + '" data-act="pack" data-id="' + id + '" title="Zadať balíky a skladníka" aria-label="Balíky: ' + o.packages + '">' + (o.packages || 0) + '<small>' + (o.packages > 0 ? 'balíkov' : 'zadať') + '</small></button>') +
       '</div></div>' +
       '<div class="r2">' + (addr && o.channel === 'FaxCopy' && o.city ? '<a class="addr fx" href="https://www.google.com/maps/search/?api=1&query=' + q + '" target="_blank" rel="noopener"><span class="fx-city">' + esc(o.city) + '</span>' + (o.address ? '<span class="fx-street">' + esc(o.address) + '</span>' : '') + '</a>' : addr ? '<a class="addr" href="https://www.google.com/maps/search/?api=1&query=' + q + '" target="_blank" rel="noopener">' + esc(addr) + '</a>' : '<span>bez adresy</span>') +
