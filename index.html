@@ -345,6 +345,11 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
   @media(min-width:1200px){.rwh.dl,.rw.dl{grid-template-columns:26px 64px minmax(0,1fr) 64px 190px 300px 84px}}
   @media(min-width:900px){.split .rwh.dl,.split .rw.dl{grid-template-columns:24px 58px minmax(0,1fr) 58px 96px 190px}.split .rw .dlb .l{display:none}}
   @media(min-width:1280px){.split .rwh.dl,.split .rw.dl{grid-template-columns:26px 64px minmax(0,1fr) 64px 118px 270px}.split .rw .dlb .l{display:inline}}
+  .kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:12px}
+  .kgrid .kpi{flex-direction:column;align-items:flex-start;gap:2px;min-width:0}
+  .kgrid .kpi b{font-size:24px;white-space:nowrap}
+  .sbars{gap:4px}.sbars .bar{min-width:22px;font-size:11px}.sbars .bar b{font-size:12px}.sbars .bar small{font:500 10px var(--f-body);color:var(--mute);letter-spacing:0}
+  .sbars .bar.wk i{background:var(--line)}
 </style>
 </head>
 <body>
@@ -566,10 +571,6 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
   }
   function loadWorkers() { return api('/rest/v1/mrp_workers?select=*&order=position.asc').then(function (rows) { state.workers = rows || []; }); }
   function loadOkolie() { return api('/rest/v1/okolie_customers?select=*&order=name.asc').then(function (rows) { state.okolie = rows || []; }); }
-  function loadStats() {
-    var from = addDays(todayStr(), -6);
-    return api('/rest/v1/mrp_orders?select=order_date,channel,delivered,packages,worker,amount&order_date=gte.' + from + '&order=order_date.asc').then(function (rows) { state.stats = rows || []; });
-  }
 
   // ---------- odmeny skladníkov ----------
   var MONTHS_SK = ['január', 'február', 'marec', 'apríl', 'máj', 'jún', 'júl', 'august', 'september', 'október', 'november', 'december'];
@@ -1034,23 +1035,95 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     });
     return h + '</div>';
   }
+  // ---------- štatistiky ----------
+  var STAT_RANGES = [['1', 'Dnes'], ['7', '7 dní'], ['30', '30 dní'], ['month', 'Tento mesiac'], ['prev', 'Minulý mesiac'], ['90', '90 dní'], ['year', 'Tento rok'], ['custom', 'Vlastné']];
+  function statDates() {
+    var t = todayStr(), r = state.statRange || '7', y, m;
+    if (r === '1') return [t, t];
+    if (r === '7') return [addDays(t, -6), t];
+    if (r === '30') return [addDays(t, -29), t];
+    if (r === '90') return [addDays(t, -89), t];
+    if (r === 'month') return [t.slice(0, 8) + '01', t];
+    if (r === 'year') return [t.slice(0, 4) + '-01-01', t];
+    if (r === 'prev') { y = +t.slice(0, 4); m = +t.slice(5, 7) - 1; if (m === 0) { y--; m = 12; } return [y + '-' + pad(m) + '-01', new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10)]; }
+    var f = state.statFrom || addDays(t, -29), to = state.statTo || t;
+    return f <= to ? [f, to] : [to, f];
+  }
+  function loadStats() {
+    var dr = statDates(), key = dr[0] + '|' + dr[1], all = [];
+    state.statKey = key;
+    function page(off) {
+      return api('/rest/v1/mrp_orders?select=order_date,channel,delivered,delivered_at,created_at,packages,items,worker,amount,payment,customer&order_date=gte.' + dr[0] + '&order_date=lte.' + dr[1] + '&order=order_date.asc,id.asc&limit=1000&offset=' + off).then(function (rows) {
+        rows = rows || []; all = all.concat(rows);
+        return rows.length === 1000 && off < 50000 ? page(off + 1000) : null;
+      });
+    }
+    return page(0).then(function () { if (state.statKey === key) state.stats = all; });
+  }
+  function statSum(rows, f) { return rows.reduce(function (s, o) { return s + (Number(f(o)) || 0); }, 0); }
+  function hm(min) { if (!isFinite(min) || min <= 0) return '–'; var h = Math.floor(min / 60), m = Math.round(min % 60); return h ? h + ' h ' + m + ' min' : m + ' min'; }
+  function statsCsv(days) {
+    var lines = ['Datum;Vydajky;Vybavene;Baliky;Polozky;Suma'];
+    days.forEach(function (d) { lines.push([d.k, d.n, d.done, d.pk, d.it, String(d.sum.toFixed(2)).replace('.', ',')].join(';')); });
+    var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }), a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'statistiky-' + statDates().join('_') + '.csv'; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
   function statsHtml() {
-    var rows = state.stats || [], i, days = ['Ne', 'Po', 'Ut', 'St', 'Št', 'Pi', 'So'], cols = [], max = 1;
-    for (i = 6; i >= 0; i--) { var k = addDays(todayStr(), -i); cols.push({ k: k, label: days[parseDate(k).getDay()], n: 0 }); }
-    rows.forEach(function (o) { cols.forEach(function (c) { if (c.k === o.order_date) c.n++; }); });
-    cols.forEach(function (c) { if (c.n > max) max = c.n; });
-    var done = rows.filter(function (o) { return o.delivered; }).length, pk = rows.reduce(function (s, o) { return s + (o.packages || 0); }, 0);
-    var h = '<div class="card"><h3>Posledných 7 dní</h3><div class="kpis"><div class="kpi"><b>' + rows.length + '</b><span>výdajky</span></div><div class="kpi g"><b>' + done + '</b><span>doručené</span></div><div class="kpi"><b>' + pk + '</b><span>balíky</span></div></div>' +
-      '<div class="bars">' + cols.map(function (c) { return '<div class="bar"><b>' + c.n + '</b><i style="height:' + Math.round(c.n / max * 100) + '%"></i>' + c.label + '</div>'; }).join('') + '</div></div>';
-    h += '<div class="card scroll"><h3>Podľa kanála</h3><table><tr><th>Kanál</th><th>Výdajky</th><th>Doručené</th><th>Balíky</th></tr>' + CHANNELS.map(function (c) {
-      var l = rows.filter(function (o) { return o.channel === c.k; });
-      return '<tr><td>' + esc(c.k) + '</td><td>' + l.length + '</td><td>' + l.filter(function (o) { return o.delivered; }).length + '</td><td>' + l.reduce(function (s, o) { return s + (o.packages || 0); }, 0) + '</td></tr>';
+    var rows = state.stats, dr = statDates(), i, wd = ['Ne', 'Po', 'Ut', 'St', 'Št', 'Pi', 'So'], metric = state.statMetric || 'n';
+    var head = '<div class="card"><div class="filters">' + STAT_RANGES.map(function (r) { return '<button class="fchip' + ((state.statRange || '7') === r[0] ? ' on' : '') + '" data-act="strange" data-v="' + r[0] + '">' + r[1] + '</button>'; }).join('') + '</div>' +
+      ((state.statRange || '7') === 'custom' ? '<div class="addrow" style="margin-top:10px"><div class="fld"><label for="st-from">Od</label><input type="date" id="st-from" value="' + esc(dr[0]) + '"></div><div class="fld"><label for="st-to">Do</label><input type="date" id="st-to" value="' + esc(dr[1]) + '"></div></div>' : '') +
+      '<p class="hint" style="margin:10px 0 0">Obdobie: ' + esc(skDate(dr[0])) + (dr[0] !== dr[1] ? ' – ' + esc(skDate(dr[1])) : '') + ' · podľa dátumu rozvozu</p></div>';
+    if (rows === null || state.statKey !== dr[0] + '|' + dr[1]) return head + '<div class="card"><div class="empty">Načítavam…</div></div>';
+    if (!rows.length) return head + '<div class="card"><div class="empty">V tomto období nie sú žiadne výdajky.</div></div>';
+    var done = rows.filter(function (o) { return o.delivered; }), pk = statSum(rows, function (o) { return o.packages; }), it = statSum(rows, function (o) { return o.items; }), sum = statSum(rows, function (o) { return o.amount; });
+    var times = done.filter(function (o) { return o.delivered_at && o.created_at; }).map(function (o) { return (new Date(o.delivered_at) - new Date(o.created_at)) / 60000; }).filter(function (x) { return x >= 0; }).sort(function (a, b) { return a - b; });
+    var med = times.length ? times[Math.floor(times.length / 2)] : NaN;
+    // dni
+    var byDay = {}; rows.forEach(function (o) { var d = byDay[o.order_date] || (byDay[o.order_date] = { k: o.order_date, n: 0, done: 0, pk: 0, it: 0, sum: 0 }); d.n++; if (o.delivered) d.done++; d.pk += o.packages || 0; d.it += o.items || 0; d.sum += Number(o.amount) || 0; });
+    var days = Object.keys(byDay).sort().map(function (k) { return byDay[k]; });
+    var workdays = days.filter(function (d) { var w = parseDate(d.k).getDay(); return w !== 0 && w !== 6; }).length || days.length;
+    var h = head + '<div class="card"><h3>Prehľad</h3><div class="kgrid">' +
+      [['' + rows.length, 'výdajky', ''], ['' + done.length, 'vybavené · ' + Math.round(done.length / rows.length * 100) + ' %', 'g'], ['' + pk, 'balíky', ''], ['' + it, 'položky', ''], [money(sum), 'suma výdajok', ''],
+       [(pk / rows.length).toFixed(1).replace('.', ','), 'balíkov na výdajku', ''], [(rows.length / workdays).toFixed(1).replace('.', ','), 'výdajok na pracovný deň', ''], [hm(med), 'medián do vybavenia', '']].map(function (k) { return '<div class="kpi ' + k[2] + '"><b>' + esc(k[0]) + '</b><span>' + esc(k[1]) + '</span></div>'; }).join('') + '</div></div>';
+    // graf: po dňoch, pri dlhom období po mesiacoch
+    var span = Math.round((parseDate(dr[1]) - parseDate(dr[0])) / 864e5) + 1, cols = [], max = 1, c;
+    function val(x) { return metric === 'pk' ? x.pk : metric === 'sum' ? x.sum : x.n; }
+    if (span <= 45) {
+      for (i = 0; i < span; i++) { var k = addDays(dr[0], i), w = parseDate(k).getDay(), d = byDay[k] || { n: 0, pk: 0, sum: 0 }; cols.push({ label: span <= 10 ? wd[w] : '' + (+k.slice(8)), sub: span <= 10 ? k.slice(8) + '.' : wd[w], v: val(d), wk: w === 0 || w === 6 }); }
+    } else {
+      var byM = {}; days.forEach(function (d) { var m = d.k.slice(0, 7), x = byM[m] || (byM[m] = { n: 0, pk: 0, sum: 0 }); x.n += d.n; x.pk += d.pk; x.sum += d.sum; });
+      Object.keys(byM).sort().forEach(function (m) { cols.push({ label: m.slice(5) + '/' + m.slice(2, 4), sub: '', v: val(byM[m]), wk: false }); });
+    }
+    cols.forEach(function (x) { if (x.v > max) max = x.v; });
+    h += '<div class="card"><h3>Vývoj</h3><div class="filters" style="margin-bottom:6px">' + [['n', 'Výdajky'], ['pk', 'Balíky'], ['sum', 'Suma']].map(function (m) { return '<button class="fchip' + (metric === m[0] ? ' on' : '') + '" data-act="smetric" data-v="' + m[0] + '">' + m[1] + '</button>'; }).join('') + '</div>' +
+      '<div class="scroll"><div class="bars sbars" style="min-width:' + Math.max(0, cols.length * 26) + 'px">' + cols.map(function (x) { return '<div class="bar' + (x.wk ? ' wk' : '') + '"><b>' + (metric === 'sum' ? Math.round(x.v) : x.v) + '</b><i style="height:' + Math.round(x.v / max * 100) + '%"></i>' + esc(x.label) + (x.sub ? '<small>' + esc(x.sub) + '</small>' : '') + '</div>'; }).join('') + '</div></div></div>';
+    // kanály
+    h += '<div class="card scroll"><h3>Podľa kanála</h3><table><tr><th>Kanál</th><th>Výdajky</th><th>Vybavené</th><th>Balíky</th><th>Položky</th><th>Suma</th></tr>' + CHANNELS.map(function (ch) {
+      var l = rows.filter(function (o) { return o.channel === ch.k; });
+      return '<tr><td>' + esc(ch.k) + '</td><td>' + l.length + '</td><td>' + l.filter(function (o) { return o.delivered; }).length + '</td><td>' + statSum(l, function (o) { return o.packages; }) + '</td><td>' + statSum(l, function (o) { return o.items; }) + '</td><td>' + money(statSum(l, function (o) { return o.amount; })) + '</td></tr>';
     }).join('') + '</table></div>';
+    // skladníci
     var names = {}; rows.forEach(function (o) { if (o.worker) names[o.worker] = 1; });
-    h += '<div class="card scroll"><h3>Skladníci</h3><table><tr><th>Meno</th><th>Výdajky</th><th>Balíky</th></tr>' + (Object.keys(names).length ? Object.keys(names).sort().map(function (n) {
+    var withW = rows.filter(function (o) { return o.worker; }).length;
+    h += '<div class="card scroll"><h3>Skladníci</h3><table><tr><th>Meno</th><th>Výdajky</th><th>Balíky</th><th>Položky</th><th>Podiel</th></tr>' + (Object.keys(names).length ? Object.keys(names).sort().map(function (n) {
       var m = rows.filter(function (o) { return o.worker === n; });
-      return '<tr><td>' + esc(n) + '</td><td>' + m.length + '</td><td>' + m.reduce(function (s, o) { return s + (o.packages || 0); }, 0) + '</td></tr>';
-    }).join('') : '<tr><td colspan="3" style="text-align:left;color:var(--mute)">Zatiaľ nikomu nebola priradená výdajka.</td></tr>') + '</table></div>';
+      return '<tr><td>' + esc(n) + '</td><td>' + m.length + '</td><td>' + statSum(m, function (o) { return o.packages; }) + '</td><td>' + statSum(m, function (o) { return o.items; }) + '</td><td>' + Math.round(m.length / withW * 100) + ' %</td></tr>';
+    }).join('') : '<tr><td colspan="5" style="text-align:left;color:var(--mute)">Zatiaľ nikomu nebola priradená výdajka.</td></tr>') + '</table></div>';
+    // platby
+    var pays = {}; rows.forEach(function (o) { var p = o.payment || '–'; var x = pays[p] || (pays[p] = { n: 0, sum: 0 }); x.n++; x.sum += Number(o.amount) || 0; });
+    h += '<div class="card scroll"><h3>Podľa platby</h3><table><tr><th>Platba</th><th>Výdajky</th><th>Suma</th></tr>' + Object.keys(pays).sort(function (a, b) { return pays[b].n - pays[a].n; }).map(function (p) { return '<tr><td>' + esc(p) + '</td><td>' + pays[p].n + '</td><td>' + money(pays[p].sum) + '</td></tr>'; }).join('') + '</table></div>';
+    // dni v týždni
+    var dow = [1, 2, 3, 4, 5, 6, 0].map(function (w) { var ds = days.filter(function (d) { return parseDate(d.k).getDay() === w; }); return { w: w, days: ds.length, n: statSum(ds, function (d) { return d.n; }), pk: statSum(ds, function (d) { return d.pk; }) }; }).filter(function (x) { return x.days; });
+    if (dow.length > 1) h += '<div class="card scroll"><h3>Podľa dňa v týždni</h3><table><tr><th>Deň</th><th>Dní</th><th>Výdajky spolu</th><th>Ø výdajok</th><th>Ø balíkov</th></tr>' + dow.map(function (x) { return '<tr><td>' + wd[x.w] + '</td><td>' + x.days + '</td><td>' + x.n + '</td><td>' + (x.n / x.days).toFixed(1).replace('.', ',') + '</td><td>' + (x.pk / x.days).toFixed(1).replace('.', ',') + '</td></tr>'; }).join('') + '</table></div>';
+    // top zákazníci
+    var cust = {}; rows.forEach(function (o) { var c = String(o.customer || '').trim() || '–'; var x = cust[c] || (cust[c] = { n: 0, pk: 0, sum: 0 }); x.n++; x.pk += o.packages || 0; x.sum += Number(o.amount) || 0; });
+    h += '<div class="card scroll"><h3>Najčastejší zákazníci</h3><table><tr><th>Zákazník</th><th>Výdajky</th><th>Balíky</th><th>Suma</th></tr>' + Object.keys(cust).sort(function (a, b) { return cust[b].n - cust[a].n || cust[b].sum - cust[a].sum; }).slice(0, 10).map(function (c) { return '<tr><td>' + esc(c) + '</td><td>' + cust[c].n + '</td><td>' + cust[c].pk + '</td><td>' + money(cust[c].sum) + '</td></tr>'; }).join('') + '</table></div>';
+    // denný prehľad
+    h += '<div class="card scroll"><h3>Po dňoch</h3><div class="filters" style="margin-bottom:6px"><button class="fchip" data-act="scsv">Stiahnuť CSV</button></div><table><tr><th>Deň</th><th>Výdajky</th><th>Vybavené</th><th>Balíky</th><th>Položky</th><th>Suma</th></tr>' + days.slice().reverse().map(function (d) {
+      return '<tr><td>' + wd[parseDate(d.k).getDay()] + ' ' + esc(skDate(d.k)) + '</td><td>' + d.n + '</td><td>' + d.done + '</td><td>' + d.pk + '</td><td>' + d.it + '</td><td>' + money(d.sum) + '</td></tr>';
+    }).join('') + '</table></div>';
+    state.statDays = days;
     return h;
   }
 
@@ -1438,6 +1511,9 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
         .then(render).catch(function (e) { toast('Nepodarilo sa vrátiť: ' + e.message); });
     }
     else if (act === 'filter') { state.filter = v; render(); }
+    else if (act === 'strange') { state.statRange = v; state.stats = null; render(); loadStats().then(render).catch(function (e) { toast(e.message); }); }
+    else if (act === 'smetric') { state.statMetric = v; render(); }
+    else if (act === 'scsv') { statsCsv(state.statDays || []); }
     else if (act === 'dprev' || act === 'dnext') { state.date = addDays(state.date, act === 'dprev' ? -1 : 1); state.selected = {}; reloadAll(false); }
     else if (act === 'menu') { openMenu(); }
     else if (act === 'goto') {
@@ -1445,7 +1521,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
       if (v !== 'rozvoz' && !state.isAdmin) { toast('Táto časť je len pre správcu.'); return; }
       state.view = v;
       if (v === 'pouzivatelia') { render(); loadUsers().then(render).catch(function (e) { toast(e.message); }); }
-      else if (v === 'statistiky') { render(); loadStats().then(render).catch(function (e) { toast(e.message); }); }
+      else if (v === 'statistiky') { state.stats = null; render(); loadStats().then(render).catch(function (e) { toast(e.message); }); }
       else if (v === 'odmeny') { state.rw.month = todayStr().slice(0, 7); render(); loadRewards().then(render).catch(function (e) { toast(e.message); }); }
       else render();
     }
@@ -1629,6 +1705,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
   document.addEventListener('change', function (ev) {
     var t = ev.target; if (!t) return;
     if (t.id === 'adt') { if (t.value) { state.archDate = t.value; state.archQ = ''; loadArch().then(render).catch(function (e) { toast(e.message); }); } return; }
+    if (t.id === 'st-from' || t.id === 'st-to') { var sf = $('st-from').value, st2 = $('st-to').value; if (sf && st2) { state.statFrom = sf; state.statTo = st2; state.stats = null; render(); loadStats().then(render).catch(function (e) { toast(e.message); }); } return; }
     if (t.id === 'dt') { if (t.value) { state.date = t.value; state.selected = {}; reloadAll(false); } return; }
     var sel = t.getAttribute && t.getAttribute('data-sel');
     if (sel) { if (t.checked) state.selected[sel] = true; else delete state.selected[sel]; lblBarUpdate(); return; }
