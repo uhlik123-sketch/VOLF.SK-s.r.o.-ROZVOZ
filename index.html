@@ -367,6 +367,8 @@ button.chip{border-width:1px}
 .rw-info{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0}
 .rw-info .bdg,.rw-info .chip{height:20px;padding:0 7px;font-size:11.5px;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .rw-info-i{display:none}
+.tile.zero{color:var(--red);border-style:dashed}
+.fld .hint{font-size:12.5px;color:var(--mute);margin:6px 0 0}
 .rw .slipb.lblst{pointer-events:none;cursor:default;background:#e8f9fb;border-color:#14b8c4;color:#0b6f78;justify-content:center}
 @media(min-width:900px) and (max-width:1399px){.split .rw-info,.split .rwh .ih{display:none}.split .rw-info-i{display:contents}.split .rw .waitdrv .l{display:none}}
 @media(min-width:1400px){.split .rwh,.split .rw{grid-template-columns:24px 58px minmax(0,1fr) 112px 40px 58px 96px 124px}.split .rwh.dl,.split .rw.dl{grid-template-columns:24px 58px minmax(0,1fr) 112px 40px 58px 96px 250px}.split .rw .vehb{width:40px}}
@@ -1186,7 +1188,7 @@ button.chip{border-width:1px}
     var o = findOrder(id); if (!o) return;
     var opts = '<option value="">— vyberte skladníka —</option>' + state.workers.map(function (w) { return '<option' + (w.name === o.worker ? ' selected' : '') + '>' + esc(w.name) + '</option>'; }).join('');
     sheet('<h2>' + esc(o.customer) + '</h2><p>Výdajka ' + esc(dn(o.id)) + ' · ' + esc([o.address, o.city].filter(Boolean).join(', ')) + '</p><p>Počet balíkov aj skladník sú povinné. Po uložení sa automaticky otvorí tlač štítkov, jeden štítok na balík.</p>' +
-      '<div class="fld"><label for="p-count">Počet balíkov <span class="req">*</span></label><div class="tiles" id="p-tiles">' + [1,2,3,4,5,6,7,8,9,10].map(function (n) { return '<button type="button" class="tile' + (o.packages === n ? ' on' : '') + '" data-act="pk" data-v="' + n + '">' + n + '</button>'; }).join('') + '</div><input type="number" id="p-count" min="1" step="1" inputmode="numeric" placeholder="alebo iné číslo" value="' + (o.packages > 0 ? o.packages : '') + '"></div>' +
+      '<div class="fld"><label for="p-count">Počet balíkov <span class="req">*</span></label><div class="tiles" id="p-tiles">' + [0,1,2,3,4,5,6,7,8,9,10].map(function (n) { return '<button type="button" class="tile' + (n === 0 ? ' zero' : '') + (o.packages === n ? ' on' : '') + '" data-act="pk" data-v="' + n + '">' + n + '</button>'; }).join('') + '</div><input type="number" id="p-count" min="0" step="1" inputmode="numeric" placeholder="alebo iné číslo" value="' + (o.packages > 0 ? o.packages : '') + '"><p class="hint">0 = zrušiť balíky, skladníka aj štítok (ak ste zadali balíky omylom).</p></div>' +
       '<div class="fld"><label>Skladník <span class="req">*</span></label><div class="tiles wide" id="w-tiles">' + state.workers.map(function (w) { return '<button type="button" class="tile' + (w.name === o.worker ? ' on' : '') + '" data-act="pw" data-v="' + esc(w.name) + '">' + esc(w.name) + '</button>'; }).join('') + '</div><input type="hidden" id="p-worker" value="' + esc(o.worker || '') + '"></div>' +
       '<div class="row"><button class="btn grow" data-act="savepack" data-id="' + esc(o.id) + '">' + ic('printer', 18) + ' Uložiť a tlačiť štítky</button><button class="btn ghost" data-act="close">Zrušiť</button></div>');
   }
@@ -1650,6 +1652,11 @@ button.chip{border-width:1px}
     }
     else if (act === 'savepack') {
       var n = parseInt($('p-count').value, 10), w = $('p-worker').value;
+      if (n === 0) {
+        closeModal();
+        patchOrder(id, { packages: 0, worker: null, label_printed: false, slip_printed: false }, 'Balíky, skladník aj štítok zrušené (výdajka ' + id + ')');
+        return;
+      }
       if (!(n >= 1) || !w) { toast('Zadajte počet balíkov (aspoň 1) a vyberte skladníka'); return; }
       closeModal();
       patchOrder(id, { packages: n, worker: w, label_printed: false }, 'Uložené: ' + n + ' × štítok, skladník ' + w).then(function (ok) {
