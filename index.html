@@ -229,7 +229,7 @@ button.chip{cursor:pointer;font-family:inherit}
 }
 @media(min-width:900px){
   .olist.tbl{display:block}
-  .rwh,.rw{display:grid;grid-template-columns:26px 64px minmax(0,1fr) 44px 64px 118px 150px 84px;align-items:center;gap:10px}
+  .rwh,.rw{display:grid;grid-template-columns:26px 64px minmax(0,1fr) 142px 44px 64px 118px 150px 84px;align-items:center;gap:10px}
   .rwh{padding:0 14px 6px;font:700 11px/1 var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
   .rw{padding:8px 14px;margin-bottom:6px;min-height:60px;cursor:pointer}
   .rw:hover{box-shadow:0 2px 10px rgba(0,0,0,.12)}
@@ -245,9 +245,9 @@ button.chip{cursor:pointer;font-family:inherit}
   .rw .chk{width:20px;height:20px}
   .rw .slipb .l{display:none}
   .rw .slipb.on{background:var(--blue-soft);border-color:#9cc1f1}
-  @media(min-width:1200px){.rw .slipb .l{display:inline}.rw .slipb .s{display:none}.rwh,.rw{grid-template-columns:26px 64px minmax(0,1fr) 44px 64px 190px 160px 84px}}
+  @media(min-width:1200px){.rw .slipb .l{display:inline}.rw .slipb .s{display:none}.rwh,.rw{grid-template-columns:26px 64px minmax(0,1fr) 142px 44px 64px 190px 160px 84px}}
 }
-@media(min-width:1280px){.split{grid-template-columns:minmax(0,1.5fr) minmax(400px,1fr);gap:16px}.split .rwh,.split .rw{grid-template-columns:26px 64px minmax(0,1fr) 44px 64px 118px 150px;gap:10px;padding-left:14px;padding-right:14px}.split .rw .ib.txt{font-size:inherit}.split .rw-l2,.split .rw-note{white-space:nowrap}}
+@media(min-width:1280px){.split{grid-template-columns:minmax(0,1.5fr) minmax(400px,1fr);gap:16px}.split .rwh,.split .rw{grid-template-columns:26px 64px minmax(0,1fr) 142px 44px 64px 118px 150px;gap:10px;padding-left:14px;padding-right:14px}.split .rw .ib.txt{font-size:inherit}.split .rw-l2,.split .rw-note{white-space:nowrap}}
 @media(min-width:1500px){.olist{grid-template-columns:1fr 1fr 1fr}main,.top1,.chan{max-width:1700px}}
 @media(min-width:900px){
   .split{display:grid;grid-template-columns:minmax(0,1fr) minmax(330px,.8fr);gap:12px;align-items:start}
@@ -342,10 +342,10 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
   .rw .pair{display:flex;gap:8px;min-width:0}
   .rw .pair .ib{flex:1 1 0;min-width:0;width:auto}
-  .rwh.dl,.rw.dl{grid-template-columns:26px 64px minmax(0,1fr) 44px 64px 118px 280px 84px}
-  @media(min-width:1200px){.rwh.dl,.rw.dl{grid-template-columns:26px 64px minmax(0,1fr) 44px 64px 190px 300px 84px}}
+  .rwh.dl,.rw.dl{grid-template-columns:26px 64px minmax(0,1fr) 142px 44px 64px 118px 280px 84px}
+  @media(min-width:1200px){.rwh.dl,.rw.dl{grid-template-columns:26px 64px minmax(0,1fr) 142px 44px 64px 190px 300px 84px}}
   @media(min-width:900px){.split .rwh.dl,.split .rw.dl{grid-template-columns:24px 58px minmax(0,1fr) 40px 58px 96px 190px}.split .rw .dlb .l{display:none}}
-  @media(min-width:1280px){.split .rwh.dl,.split .rw.dl{grid-template-columns:26px 64px minmax(0,1fr) 44px 64px 118px 270px}.split .rw .dlb .l{display:inline}}
+  @media(min-width:1280px){.split .rwh.dl,.split .rw.dl{grid-template-columns:26px 64px minmax(0,1fr) 142px 44px 64px 118px 270px}.split .rw .dlb .l{display:inline}}
   .kgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:12px}
   .kgrid .kpi{flex-direction:column;align-items:flex-start;gap:2px;min-width:0}
   .kgrid .kpi b{font-size:24px;white-space:nowrap}
@@ -361,10 +361,15 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
 .bdg.cash,.bdg.cod{border-color:currentColor}
 .bdg.m{border-color:var(--line)}
 button.chip{border-width:1px}
-.split .rw .waitdrv .l{display:none}
 .rw .vehb{width:44px;min-width:0;height:44px;padding:0;justify-content:center;display:inline-flex}
 .rw .vehb.on{background:var(--blue);border-color:var(--blue);color:#fff}
 .waitdrv{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 10px;border-radius:10px;border:1px dashed #9aa6b8;color:var(--mute);font-size:13px;font-weight:600;text-align:center;line-height:1.1}
+.rw-info{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0}
+.rw-info .bdg,.rw-info .chip{height:20px;padding:0 7px;font-size:11.5px;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.rw-info-i{display:none}
+@media(min-width:900px) and (max-width:1399px){.split .rw-info,.split .rwh .ih{display:none}.split .rw-info-i{display:contents}.split .rw .waitdrv .l{display:none}}
+@media(min-width:1400px){.split .rwh,.split .rw{grid-template-columns:24px 58px minmax(0,1fr) 112px 40px 58px 96px 124px}.split .rwh.dl,.split .rw.dl{grid-template-columns:24px 58px minmax(0,1fr) 112px 40px 58px 96px 250px}.split .rw .vehb{width:40px}}
+.rwh .ih{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -835,12 +840,15 @@ button.chip{border-width:1px}
     var primary = packed
       ? (sigWait(o) ? WAITDRV : '<button class="ib txt sig" data-act="deliver" data-id="' + id + '">' + ic(needsSig(o) ? 'pencil' : 'check', 18) + ' ' + (needsSig(o) ? 'Podpis' : 'Vybavené') + '</button>')
       : '<button class="ib txt sig todo" data-act="pack" data-id="' + id + '">' + ic('box', 18) + ' Zadať balíky</button>';
-    var flags = doneChip(o) + (o.incomplete ? '<span class="chip r">Nekompletné</span>' : '') + (o.label_printed && o.packages > 0 ? '<span class="chip g">Štítok ✓</span>' : '');
+    var flags = doneChip(o) + (o.incomplete ? '<span class="chip r">Nekompletné</span>' : '');
+    var tags = payBadge(o) + dtBadge(o) + (o.label_printed && o.packages > 0 ? '<span class="chip g">Štítok ✓</span>' : '');
+    var info = '<div class="rw-info">' + tags + '</div>';
     var sub = (o.city ? '<b class="rw-city">' + esc(o.city) + '</b>' : '') + (o.address ? ' <span>' + esc(o.address) + '</span>' : '') + (o.phone ? ' <span class="rw-ph">· ' + esc(o.phone) + '</span>' : '') + ' <span class="rw-ph">· ' + (isDated(o.channel) ? '' : esc(skDate(o.order_date)) + ' ') + esc(o.time || '') + (o.worker ? ' · ' + esc(o.worker) : '') + '</span>';
     return '<article class="o rw' + (dlBtn(o, false) ? ' dl' : '') + ' s-' + stateOf(o) + (splitMode() && o.id === state.sel ? ' sel' : '') + '" data-row="' + id + '">' +
       '<input class="chk" type="checkbox" data-sel="' + id + '"' + (state.selected[o.id] ? ' checked' : '') + ' aria-label="Vybrať na tlač štítkov">' +
       '<span class="oid">' + esc(dn(o.id)) + (ba && o.route_pos != null ? '<span class="rn">' + o.route_pos + '</span>' : '') + '</span>' +
-      '<div class="rw-main"><div class="rw-l1"><span class="oname">' + esc(o.customer) + '</span>' + (o.goods ? '<span class="bdg goods">Tovar</span>' : '') + dtBadge(o) + payBadge(o) + (o.items > 0 ? '<span class="bdg pol">' + o.items + ' pol.</span>' : '') + flags + '</div><div class="rw-l2">' + sub + '</div>' + (o.mrp_note ? '<div class="rw-note" title="' + esc(o.mrp_note) + '">Pozn.: ' + esc(o.mrp_note) + '</div>' : '') + '</div>' +
+      '<div class="rw-main"><div class="rw-l1"><span class="oname">' + esc(o.customer) + '</span>' + (o.goods ? '<span class="bdg goods">Tovar</span>' : '') + (o.items > 0 ? '<span class="bdg pol">' + o.items + ' pol.</span>' : '') + '<span class="rw-info-i">' + tags + '</span>' + flags + '</div><div class="rw-l2">' + sub + '</div>' + (o.mrp_note ? '<div class="rw-note" title="' + esc(o.mrp_note) + '">Pozn.: ' + esc(o.mrp_note) + '</div>' : '') + '</div>' +
+      info +
       '<button class="ib vehb' + (o.in_vehicle ? ' on' : '') + '" data-act="veh" data-id="' + id + '" title="Vo vozidle" aria-label="Vo vozidle" aria-pressed="' + (o.in_vehicle ? 'true' : 'false') + '">' + ic('truck', 20) + '</button>' +
       '<button class="pk' + (o.packages > 0 ? ' has' : '') + '" data-act="pack" data-id="' + id + '" title="Zadať balíky a skladníka" aria-label="Balíky: ' + (o.packages || 0) + '">' + (o.packages || 0) + '</button>' +
       '<button class="ib txt slipb' + (o.slip_printed ? ' on' : '') + '" data-act="slip" data-id="' + id + '" title="Len označenie pre ostatných skladníkov, nič sa netlačí" aria-pressed="' + (o.slip_printed ? 'true' : 'false') + '">' + ic('file', 18) + '<span class="l"> Výdaj vytlačený' + (o.slip_printed ? ' ✓' : '?') + '</span><span class="s"> Výdaj' + (o.slip_printed ? ' ✓' : '?') + '</span></button>' +
@@ -849,7 +857,7 @@ button.chip{border-width:1px}
   function listInner() {
     var l = visible(); ensureSel(l); if (!l.length) return emptyHtml();
     if (!listMode()) return l.map(orderHtml).join('');
-    return '<div class="rwh' + (state.channel === 'Osobný odber' && !state.isDriver ? ' dl' : '') + '"><span></span>' + shHtml('id', 'Číslo') + '<span>' + shHtml('customer', 'Zákazník') + ' · ' + shHtml('city', 'Mesto') + ', ulica</span><span></span>' + shHtml('packages', 'Balíky') + '<span></span><span></span><span></span></div>' + l.map(rowHtml).join('');
+    return '<div class="rwh' + (state.channel === 'Osobný odber' && !state.isDriver ? ' dl' : '') + '"><span></span>' + shHtml('id', 'Číslo') + '<span>' + shHtml('customer', 'Zákazník') + ' · ' + shHtml('city', 'Mesto') + ', ulica</span><span class="ih">Platba</span><span></span>' + shHtml('packages', 'Balíky') + '<span></span><span></span><span></span></div>' + l.map(rowHtml).join('');
   }
   function refreshList() { var el = document.querySelector('.olist'); if (el) { el.innerHTML = listInner(); el.classList.toggle('tbl', listMode()); var dt = $('detail'); if (dt && splitMode()) dt.innerHTML = detailInner(); else if (!!dt !== splitMode()) render(); } else render(); }
   function lblBarUpdate() { var b = $('lblbar'); if (!b) return; b.innerHTML = lblBarHtml(); b.className = 'lblbar' + (selectedOrders().length ? ' show' : ''); }
