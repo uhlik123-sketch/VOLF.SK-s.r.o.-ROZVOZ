@@ -209,7 +209,8 @@ input:disabled{background:var(--bg);color:var(--mute)}
 .sumblk td:last-child,.sumblk th:last-child{text-align:right}
 .mnote{margin-top:8px;padding:7px 10px;border-radius:8px;background:#fff6dc;border:1px solid #f0d98a;color:#6b4e00;font-size:13.5px;line-height:1.35;white-space:pre-line;overflow-wrap:anywhere}
 .mnote b{font-weight:700}
-.rw-note{margin-top:3px;font-size:13px;color:#8a6200;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rw-note{margin-top:4px;padding:4px 8px;border-radius:6px;background:#fff4cc;border:1px solid #f0d46a;font-size:13px;line-height:1.3;color:#6b4a00;font-weight:600;white-space:normal;overflow-wrap:anywhere}
+.rw-note.man{background:#e9f1ff;border-color:#a9c4f2;color:#1d3f7a}
 button.chip{cursor:pointer;font-family:inherit}
 .chip{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--bg);border:1px solid var(--line);color:#4b5668}
 .chip.g{background:#e7f7ee;border-color:#9bd9b5;color:#17713f}.chip.p{background:#efe7ff;border-color:#b59af5;color:#5b34c4}.chip.b{background:var(--blue-soft);border-color:#9cc1f1;color:var(--blue)}.chip.r{background:var(--red-soft);border-color:#eba7aa;color:var(--red)}
@@ -851,7 +852,7 @@ button.chip{border-width:1px}
     return '<article class="o rw' + (dlBtn(o, false) ? ' dl' : '') + ' s-' + stateOf(o) + (splitMode() && o.id === state.sel ? ' sel' : '') + '" data-row="' + id + '">' +
       '<input class="chk" type="checkbox" data-sel="' + id + '"' + (state.selected[o.id] ? ' checked' : '') + ' aria-label="Vybrať na tlač štítkov">' +
       '<span class="oid">' + esc(dn(o.id)) + (ba && o.route_pos != null ? '<span class="rn">' + o.route_pos + '</span>' : '') + '</span>' +
-      '<div class="rw-main"><div class="rw-l1"><span class="oname">' + esc(o.customer) + '</span>' + (o.goods ? '<span class="bdg goods">Tovar</span>' : '') + (o.items > 0 ? '<span class="bdg pol">' + o.items + ' pol.</span>' : '') + '<span class="rw-info-i">' + tags + '</span>' + flags + '</div><div class="rw-l2">' + sub + '</div>' + (o.mrp_note ? '<div class="rw-note" title="' + esc(o.mrp_note) + '">Pozn.: ' + esc(o.mrp_note) + '</div>' : '') + '</div>' +
+      '<div class="rw-main"><div class="rw-l1"><span class="oname">' + esc(o.customer) + '</span>' + (o.goods ? '<span class="bdg goods">Tovar</span>' : '') + (o.items > 0 ? '<span class="bdg pol">' + o.items + ' pol.</span>' : '') + '<span class="rw-info-i">' + tags + '</span>' + flags + '</div><div class="rw-l2">' + sub + '</div>' + (o.note ? '<div class="rw-note man"><b>Poznámka:</b> ' + esc(o.note) + '</div>' : '') + (o.mrp_note ? '<div class="rw-note"><b>Poznámka z MRP:</b> ' + esc(o.mrp_note) + '</div>' : '') + '</div>' +
       info +
       '<button class="ib vehb' + (o.in_vehicle ? ' on' : '') + '" data-act="veh" data-id="' + id + '" title="Vo vozidle" aria-label="Vo vozidle" aria-pressed="' + (o.in_vehicle ? 'true' : 'false') + '">' + ic('truck', 20) + '</button>' +
       '<button class="pk' + (o.packages > 0 ? ' has' : '') + '" data-act="pack" data-id="' + id + '" title="Zadať balíky a skladníka" aria-label="Balíky: ' + (o.packages || 0) + '">' + (o.packages || 0) + '</button>' +
