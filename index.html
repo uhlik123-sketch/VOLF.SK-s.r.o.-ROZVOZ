@@ -785,6 +785,7 @@ button.chip{border-width:1px}
     return plain([o.id, o.customer, o.company_name, o.address, o.city, o.zip, o.phone, o.note, o.mrp_note].join(' ')).indexOf(q) >= 0;
   }
   function visible() { return sortedChan().filter(function (o) { return matches(o); }).filter(searchOk); }
+  function vehOk(o) { return o.channel === 'Rozvoz BA' || o.channel === 'FaxCopy'; }
   function lblDone(o) { return !!(o.label_printed && o.packages > 0); }
   function stateOf(o) { return o.incomplete ? 'inc' : o.in_vehicle ? 'veh' : (isReady(o) && lblDone(o)) ? 'rdy' : o.slip_printed ? 'slip' : o.label_printed ? 'lbl' : o.packages > 0 ? 'vyd' : 'none'; }
   function stopQuery(o) { return (o.lat != null && o.lng != null) ? o.lat + ',' + o.lng : [o.address, o.zip, o.city].filter(Boolean).join(', '); }
@@ -874,7 +875,7 @@ button.chip{border-width:1px}
       '<span class="oid">' + esc(dn(o.id)) + (ba && o.route_pos != null ? '<span class="rn">' + o.route_pos + '</span>' : '') + '</span>' +
       '<div class="rw-main"><div class="rw-l1"><span class="oname">' + esc(o.customer) + '</span>' + (o.goods ? '<span class="bdg goods">Tovar</span>' : '') + (o.items > 0 ? '<span class="bdg pol">' + o.items + ' pol.</span>' : '') + '<span class="rw-info-i">' + tags + '</span>' + flags + '</div><div class="rw-l2">' + sub + '</div>' + (o.note ? '<div class="rw-note man"><b>Poznámka:</b> ' + esc(o.note) + '</div>' : '') + (o.mrp_note ? '<div class="rw-note"><b>Poznámka z MRP:</b> ' + esc(o.mrp_note) + '</div>' : '') + '</div>' +
       info +
-      '<button class="ib vehb' + (o.in_vehicle ? ' on' : '') + '" data-act="veh" data-id="' + id + '" title="Vo vozidle" aria-label="Vo vozidle" aria-pressed="' + (o.in_vehicle ? 'true' : 'false') + '">' + ic('truck', 20) + '</button>' +
+      (vehOk(o) ? '<button class="ib vehb' + (o.in_vehicle ? ' on' : '') + '" data-act="veh" data-id="' + id + '" title="Vo vozidle" aria-label="Vo vozidle" aria-pressed="' + (o.in_vehicle ? 'true' : 'false') + '">' + ic('truck', 20) + '</button>' : '<span></span>') +
       '<button class="pk' + (o.packages > 0 ? ' has' : '') + '" data-act="pack" data-id="' + id + '" title="Zadať balíky a skladníka" aria-label="Balíky: ' + (o.packages || 0) + '">' + (o.packages || 0) + '</button>' +
       (lblDone(o) ? '<span class="ib txt slipb on lblst" title="Štítok je vytlačený">' + ic('file', 18) + '<span class="l"> Štítok ✓</span><span class="s"> Štítok ✓</span></span>' : '<button class="ib txt slipb' + (o.slip_printed ? ' on' : '') + '" data-act="slip" data-id="' + id + '" title="Len označenie pre ostatných skladníkov, nič sa netlačí" aria-pressed="' + (o.slip_printed ? 'true' : 'false') + '">' + ic('file', 18) + '<span class="l"> Výdaj vytlačený' + (o.slip_printed ? ' ✓' : '?') + '</span><span class="s"> Výdaj' + (o.slip_printed ? ' ✓' : '?') + '</span></button>') +
       (dlBtn(o, false) ? '<div class="pair">' + dlBtn(o, false) + primary + '</div>' : primary) + '<button class="ib txt morebtn2" data-act="more" data-id="' + id + '" aria-label="Viac akcií">' + ic('dots', 18) + ' Viac</button></article>';
@@ -907,7 +908,7 @@ button.chip{border-width:1px}
       '<span class="oid">' + esc(dn(o.id)) + '</span><span class="oname">' + esc(o.customer) + '</span>' +
       (o.goods ? '<span class="bdg goods">Tovar</span>' : '') +
       '</div><div class="r1x"><div class="tg">' + payBadge(o) + dtBadge(o) + (o.items > 0 ? '<span class="bdg pol">' + o.items + ' pol.</span>' : '') + (o.source === 'mrp' ? '' : '<span class="bdg m">ručne</span>') + '</div><div class="pv">' +
-      ('<button class="ib vehb' + (o.in_vehicle ? ' on' : '') + '" data-act="veh" data-id="' + id + '" title="Vo vozidle" aria-label="Vo vozidle" aria-pressed="' + (o.in_vehicle ? 'true' : 'false') + '">' + ic('truck', 22) + '</button>') +
+      (vehOk(o) ? '<button class="ib vehb' + (o.in_vehicle ? ' on' : '') + '" data-act="veh" data-id="' + id + '" title="Vo vozidle" aria-label="Vo vozidle" aria-pressed="' + (o.in_vehicle ? 'true' : 'false') + '">' + ic('truck', 22) + '</button>' : '') +
       (drv ? '<span class="pk static' + (o.packages > 0 ? ' has' : '') + '" aria-label="Balíky: ' + (o.packages || 0) + '">' + (o.packages || 0) + '<small>' + (o.packages > 0 ? 'balíkov' : 'chýbajú') + '</small></span>' : '<button class="pk' + (o.packages > 0 ? ' has' : '') + '" data-act="pack" data-id="' + id + '" title="Zadať balíky a skladníka" aria-label="Balíky: ' + o.packages + '">' + (o.packages || 0) + '<small>' + (o.packages > 0 ? 'balíkov' : 'zadať') + '</small></button>') +
       '</div></div>' +
       '<div class="r2">' + (addr && o.channel === 'FaxCopy' && o.city ? '<a class="addr fx" href="https://www.google.com/maps/search/?api=1&query=' + q + '" target="_blank" rel="noopener"><span class="fx-city">' + esc(o.city) + '</span>' + (o.address ? '<span class="fx-street">' + esc(o.address) + '</span>' : '') + '</a>' : addr ? '<a class="addr" href="https://www.google.com/maps/search/?api=1&query=' + q + '" target="_blank" rel="noopener">' + esc(addr) + '</a>' : '<span>bez adresy</span>') +
@@ -939,7 +940,7 @@ button.chip{border-width:1px}
     var canDel = o.source === 'manual' || state.isAdmin;
     var row = function (act, icon, label, on) { return '<button class="mrow' + (on ? ' on' : '') + '" data-act="' + act + '" data-id="' + esc(id) + '" data-close="1">' + ic(icon, 20) + ' ' + label + '</button>'; };
     sheet('<h2>' + esc(o.customer) + '</h2><p>Výdajka ' + esc(dn(o.id)) + (dtInfo(o) ? ' · Doprava: ' + esc(dtInfo(o).t) : '') + '</p>' +
-      row('veh', 'truck', o.in_vehicle ? 'Vo vozidle ✓ (zrušiť)' : 'Označiť „vo vozidle"', o.in_vehicle) +
+      (vehOk(o) || o.in_vehicle ? row('veh', 'truck', o.in_vehicle ? 'Vo vozidle ✓ (zrušiť)' : 'Označiť „vo vozidle"', o.in_vehicle) : '') +
       row('inc', 'warn', o.incomplete ? 'Nekompletné ✓ (zrušiť)' : 'Označiť ako nekompletné', o.incomplete) +
       row('slip', 'file', o.slip_printed ? 'Výdaj vytlačený ✓ (zrušiť)' : 'Výdaj vytlačený (len označenie)', o.slip_printed) +
       (state.isAdmin && !state.isDriver && sigWait(o) && isReady(o) ? row('delnosig', 'check', 'Vybaviť bez podpisu (do archívu)', false) : '') +
