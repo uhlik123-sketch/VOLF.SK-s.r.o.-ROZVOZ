@@ -649,7 +649,10 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
       '<div class="row" style="margin-top:14px"><button class="btn grow" id="l-go" data-act="dologin">Prihlásiť sa</button></div></div></main>';
   }
   function isTyping() { var a = document.activeElement; return !!(a && a.closest && a.closest('#app') && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)); }
+  // Vodič vidí BA a FaxCopy na dnešný deň; sklad a správca na najbližší pracovný deň (príprava rozvozu).
+  function defaultDate() { return state.isDriver ? todayStr() : nextWorkday(todayStr()); }
   function reloadAll(silent) {
+    if (!state.dateSet) { state.dateSet = true; state.date = defaultDate(); }
     if (!silent) { state.loading = true; render(); }
     var jobs = [loadOrders(), loadWorkers(), loadOkolie(), loadPast()];
     if (state.view === 'statistiky') jobs.push(loadStats());
@@ -1103,7 +1106,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     var e = $('l-email'); if (e) e.focus();
   }
   function toggleMode() {
-    state.isDriver = !state.isDriver; store('volf.mode', state.isDriver ? 'vodic' : 'sklad'); state.view = 'rozvoz'; state.selected = {}; closeModal(); render();
+    state.isDriver = !state.isDriver; store('volf.mode', state.isDriver ? 'vodic' : 'sklad'); state.view = 'rozvoz'; state.selected = {}; state.date = defaultDate(); closeModal(); reloadAll(false);
     toast(state.isDriver ? 'Zobrazenie pre vodiča: len doručovanie' : 'Zobrazenie pre sklad: všetky funkcie');
   }
   function openPin() {

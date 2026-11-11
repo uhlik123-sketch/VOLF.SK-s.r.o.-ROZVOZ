@@ -1188,6 +1188,7 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
     var defDate = isDated(o.channel) ? o.order_date : nextWorkday(todayStr());
     sheet('<h2>Presunúť výdajku ' + esc(dn(o.id)) + '</h2><p>' + esc(o.customer) + ' · teraz: ' + esc(o.channel) + (isDated(o.channel) ? ' · ' + esc(skDate(o.order_date)) : '') + '. Po ručnom presune ju automatické triedenie už nezmení.</p>' +
       '<div class="fld"><label for="m-date">Dátum rozvozu (platí pre BA a FaxCopy)</label><input type="date" id="m-date" value="' + esc(defDate) + '"></div>' +
+      (isDated(o.channel) ? '<button class="chbtn" data-act="domove" data-id="' + esc(o.id) + '" data-v="' + esc(o.channel) + '">' + ic('move', 24) + ' Ostať v ' + esc(o.channel) + ' · len zmeniť deň</button>' : '') +
       CHANNELS.filter(function (c) { return c.k !== o.channel; }).map(function (c) {
         return '<button class="chbtn" data-act="domove" data-id="' + esc(o.id) + '" data-v="' + esc(c.k) + '">' + ic(c.icon, 24) + ' ' + esc(c.k) + '</button>';
       }).join('') + '<div class="row"><button class="btn ghost grow" data-act="close">Zrušiť</button></div>');
@@ -1522,8 +1523,8 @@ td:not(:first-child),th:not(:first-child){text-align:right;font-variant-numeric:
         .catch(function (e) { toast('Nepodarilo sa: ' + e.message); });
     }
     else if (act === 'domove' && o) {
-      var md = $('m-date') ? $('m-date').value : '', fm = { channel: v, channel_manual: true }, where = v;
-      if (isDated(v)) { if (!md) { toast('Vyberte dátum rozvozu'); return; } fm.order_date = md; where = v + ' na ' + skDate(md); }
+      var md = $('m-date') ? $('m-date').value : '', fm = v === o.channel ? {} : { channel: v, channel_manual: true }, where = v;
+      if (isDated(v)) { if (!md) { toast('Vyberte dátum rozvozu'); return; } if (v === o.channel && md === o.order_date) { toast('Výdajka už má tento dátum'); return; } fm.order_date = md; where = v + ' na ' + skDate(md); }
       closeModal(); patchOrder(id, fm, 'Výdajka ' + id + ' presunutá: ' + where);
     }
     else if (act === 'edit') { openEdit(id); }
