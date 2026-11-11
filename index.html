@@ -169,6 +169,7 @@ input:disabled{background:var(--bg);color:var(--mute)}
 }
 .fchip b{margin-left:4px;font-weight:700}
 .bdg.cod{background:#ffe3c2;color:#8a4300}
+.bdg.prev{background:#e3efff;color:#1a4f9c;border-color:#a9c4f2}
 .bdg.pay{background:var(--bg);color:var(--mute);font-weight:500}
 .bdg.cash{background:var(--green-soft);color:var(--green)}
 .bdg.dt{font-weight:800;letter-spacing:.04em;font-size:13px;padding:6px 11px;border:2px solid transparent}
@@ -415,11 +416,12 @@ button.chip{border-width:1px}
     { k: 'Okolie', label: 'Okolie', icon: 'car' }
   ];
   var LOGO = 'data:image/png;base64,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';
-  var PAYS = ['Faktúra', 'Hotovosť', 'Dobierka', 'Vopred'];
+  var PAYS = ['Faktúra', 'Hotovosť', 'Dobierka', 'Prevodom', 'Vopred'];
   function payBadge(o) {
     var p = o.payment || 'Faktúra';
     if (p === 'Hotovosť') return '<span class="bdg cash">Hotovosť ' + esc(money(o.amount)) + '</span>';
     if (p === 'Dobierka') return '<span class="bdg cod">Dobierka ' + esc(money(o.amount)) + '</span>';
+    if (p === 'Prevodom') return '<span class="bdg prev">Platba prevodom</span>';
     return '<span class="bdg pay">' + esc(p === 'Vopred' ? 'Platba vopred' : p) + '</span>';
   }
   function payOpts(cur) { return PAYS.map(function (p) { return '<option' + (cur === p ? ' selected' : '') + '>' + p + '</option>'; }).join(''); }
