@@ -395,6 +395,29 @@ button.chip{border-width:1px}
 .o.drv .acts.big{margin-top:6px;gap:6px}
 .o.drv .acts.big .ib.big{height:44px;font-size:15px}
 .o.drv .acts.big .ib.big.vehbig{flex:0 0 auto}
+.o.drr{padding:6px 8px 8px 10px;margin-bottom:6px}
+.drr .dr-top{cursor:pointer;display:block}
+.drr .dr-l1{display:flex;align-items:baseline;gap:8px;min-width:0}
+.drr .oid{font-size:14px;flex:none}
+.drr .oname{font-size:17px;line-height:1.15;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.drr.open .oname{white-space:normal}
+.drr .dr-l2{display:flex;flex-wrap:wrap;align-items:center;gap:3px 6px;margin-top:2px;color:var(--mute);font-size:13px}
+.drr .dr-ad2{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.drr.open .dr-ad2{white-space:normal}
+.drr .rw-note{margin-top:4px;padding:2px 7px;font-size:12px;line-height:1.25}
+.drr .rw-note.clamp{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.drr .dr-more{display:flex;flex-direction:column;gap:4px;margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);font-size:14px}
+.drr .dr-ph{font-weight:700;display:inline-flex;align-items:center;gap:6px;min-height:36px}
+.drr .dr-ad{display:inline-flex;align-items:center;gap:6px;color:var(--mute)}
+.drr .dr-meta{color:var(--mute);font-size:13px}
+.drr .dr-act{display:flex;align-items:center;gap:6px;margin-top:6px}
+.drr .dr-sp{flex:1}
+.drr .vehb{width:44px;height:44px}
+.drr .pk{min-width:50px;height:44px;font-size:22px;border-radius:10px}
+.drr .pk small{font-size:9px}
+.drr .dr-nav{width:48px;min-width:0;height:44px;padding:0;justify-content:center;display:inline-flex;align-items:center}
+.drr .dr-sig{height:44px;min-width:0;padding:0 12px;font-size:15px;font-weight:700;flex:none}
+.drr .dr-sig.needpack{font-size:13px;padding:0 10px}
 </style>
 </head>
 <body>
@@ -884,6 +907,7 @@ button.chip{border-width:1px}
   }
   function listInner() {
     var l = visible(); ensureSel(l); if (!l.length) return emptyHtml();
+    if (state.isDriver && drvCompact()) return l.map(drvRowHtml).join('');
     if (!listMode()) return l.map(orderHtml).join('');
     return '<div class="rwh' + (state.channel === 'Osobný odber' && !state.isDriver ? ' dl' : '') + '"><span></span>' + shHtml('id', 'Číslo') + '<span>' + shHtml('customer', 'Zákazník') + ' · ' + shHtml('city', 'Mesto') + ', ulica</span><span class="ih">Platba</span><span></span>' + shHtml('packages', 'Balíky') + '<span></span><span></span><span></span></div>' + l.map(rowHtml).join('');
   }
@@ -936,6 +960,31 @@ button.chip{border-width:1px}
       '<button class="ib" data-act="edit" data-id="' + id + '" title="Upraviť" aria-label="Upraviť">' + ic('pencil') + '</button>' +
       (listMode() && !splitMode() ? '<button class="ib txt" data-act="rowtoggle" data-id="' + id + '">' + ic('up', 18) + ' Zbaliť</button>' : '') +
       (canDel ? '<button class="ib del" data-act="del" data-id="' + id + '" title="Zmazať" aria-label="Zmazať">' + ic('trash') + '</button>' : '') + '</div></article>';
+  }
+
+  function drvCompact() { return window.innerWidth < 700; }
+  function drvRowHtml(o) {
+    var id = esc(o.id), st = stateOf(o), open = !!(state.drvExp && state.drvExp[o.id]);
+    var addr = [o.city, o.address].filter(Boolean).join(', ');
+    var sg = needsSig(o), ready = isReady(o);
+    var sign = ready
+      ? '<button class="ib txt sig dr-sig" data-act="deliver" data-id="' + id + '" title="' + (sg ? 'Podpis zákazníka a vybavenie' : 'Označiť ako vybavené') + '">' + ic(sg ? 'pencil' : 'check', 20) + ' ' + (sg ? 'Podpis' : 'Vybavené') + '</button>'
+      : '<button class="ib txt sig dr-sig needpack" data-act="needpack">Čaká na balíky</button>';
+    var nav = '<a class="ib txt nav dr-nav" href="' + esc(navUrl(o)) + '" target="_blank" rel="noopener" title="Navigovať" aria-label="Navigovať">' + ic('nav', 20) + '</a>';
+    var veh = vehOk(o) ? '<button class="ib vehb' + (o.in_vehicle ? ' on' : '') + '" data-act="veh" data-id="' + id + '" title="Vo vozidle" aria-label="Vo vozidle" aria-pressed="' + (o.in_vehicle ? 'true' : 'false') + '">' + ic('truck', 22) + '</button>' : '';
+    var pk = '<span class="pk static' + (o.packages > 0 ? ' has' : '') + '" aria-label="Balíky: ' + (o.packages || 0) + '">' + (o.packages || 0) + '<small>' + (o.packages > 0 ? 'balíkov' : 'chýbajú') + '</small></span>';
+    var notes = (o.note ? '<div class="rw-note man' + (open ? '' : ' clamp') + '"><b>Poznámka:</b> ' + esc(o.note) + '</div>' : '') + (o.mrp_note ? '<div class="rw-note' + (open ? '' : ' clamp') + '"><b>Z MRP:</b> ' + esc(o.mrp_note) + '</div>' : '');
+    var more = open ? '<div class="dr-more">' +
+      (o.phone ? '<a class="dr-ph" href="tel:' + esc(String(o.phone).replace(/[^+\d]/g, '')) + '">' + ic('phone', 18) + ' ' + esc(o.phone) + '</a>' : '') +
+      '<a class="dr-ad" href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent([o.address, [o.zip, o.city].filter(Boolean).join(' ')].filter(Boolean).join(', ')) + '" target="_blank" rel="noopener">' + ic('nav', 16) + ' ' + esc([o.address, [o.zip, o.city].filter(Boolean).join(' ')].filter(Boolean).join(', ')) + '</a>' +
+      '<div class="dr-meta">' + (isDated(o.channel) ? '' : esc(skDate(o.order_date)) + ' ') + esc(o.time || '') + (o.company_name && plain(o.company_name) !== plain(o.customer) ? ' · Odberateľ: ' + esc(o.company_name) : '') + '</div>' +
+      (doneChip(o) ? '<div class="chips">' + doneChip(o) + '</div>' : '') + '</div>' : '';
+    return '<article class="o drr s-' + st + (o.delivered ? ' done' : '') + (open ? ' open' : '') + '">' +
+      '<div class="dr-top" data-act="drvtoggle" data-id="' + id + '" role="button" aria-expanded="' + (open ? 'true' : 'false') + '">' +
+      '<div class="dr-l1"><span class="oid">' + esc(dn(o.id)) + '</span><span class="oname">' + esc(o.customer) + '</span>' + (o.goods ? '<span class="bdg goods">Tovar</span>' : '') + '</div>' +
+      '<div class="dr-l2"><span class="dr-ad2">' + esc(addr) + '</span>' + payBadge(o) + dtBadge(o) + (o.items > 0 ? '<span class="bdg pol">' + o.items + ' pol.</span>' : '') + (o.incomplete ? '<span class="chip r">Nekompletné</span>' : '') + '</div>' +
+      notes + '</div>' + more +
+      '<div class="dr-act">' + veh + pk + '<span class="dr-sp"></span>' + nav + sign + '</div></article>';
   }
   function openMore(id) {
     var o = findOrder(id); if (!o) return;
@@ -1639,6 +1688,7 @@ button.chip{border-width:1px}
     else if (act === 'pack') { openPack(id); }
     else if (act === 'slip' && o) { patchOrder(id, { slip_printed: !o.slip_printed }, !o.slip_printed ? 'Výdajka ' + id + ' označená ako vytlačená' : 'Označenie vytlačenia zrušené'); }
     else if (act === 'move') { openMove(id); }
+    else if (act === 'drvtoggle') { state.drvExp = state.drvExp || {}; state.drvExp[id] = !state.drvExp[id]; refreshList(); }
     else if (act === 'rowtoggle') { delete state.exp[id]; refreshList(); }
     else if (act === 'layout') { state.layout = state.layout === 'okno' ? 'zoznam' : state.layout === 'zoznam' ? 'karty' : 'okno'; try { localStorage.setItem('volf.layout2', state.layout); } catch (e) {} render(); }
     else if (act === 'handover') { openHandover(); }
