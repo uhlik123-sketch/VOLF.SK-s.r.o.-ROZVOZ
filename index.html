@@ -170,6 +170,8 @@ input:disabled{background:var(--bg);color:var(--mute)}
 .fchip b{margin-left:4px;font-weight:700}
 .bdg.cod{background:#ffe3c2;color:#8a4300}
 .bdg.prev{background:#e3efff;color:#1a4f9c;border-color:#a9c4f2}
+.bdg.nostock{background:#fde8e8;color:#a31616;border-color:#f0a3a3;font-weight:700}
+.rw-note.stk{background:#fde8e8;border-color:#f0a3a3;color:#8a1212}
 .bdg.pay{background:var(--bg);color:var(--mute);font-weight:500}
 .bdg.cash{background:var(--green-soft);color:var(--green)}
 .bdg.dt{font-weight:800;letter-spacing:.04em;font-size:13px;padding:6px 11px;border:2px solid transparent}
@@ -626,8 +628,25 @@ button.chip{border-width:1px}
       '<button class="btn small" data-act="pastmove">Presunúť na ' + (dayOrNext(todayStr()) === todayStr() ? 'dnes' : esc(skDate(dayOrNext(todayStr())))) + '</button><button class="btn ghost small" data-act="pastshow">Zobraziť</button></div>';
   }
   function loadOrders() {
-    return api('/rest/v1/mrp_orders?select=*&delivered=eq.false&or=' + encodeURIComponent('(order_date.eq.' + state.date + ',channel.in.("Osobný odber","Kuriér","Okolie"))') + '&order=order_date.desc,time.asc,id.asc&limit=1000').then(function (rows) { state.orders = rows || []; });
+    return api('/rest/v1/mrp_orders?select=*&delivered=eq.false&or=' + encodeURIComponent('(order_date.eq.' + state.date + ',channel.in.("Osobný odber","Kuriér","Okolie"))') + '&order=order_date.desc,time.asc,id.asc&limit=1000').then(function (rows) { state.orders = rows || []; return loadStock(); });
   }
+  // Sklad: stavy kariet len pre položky aktuálne načítaných výdajok (doplnkové, chyba nič nerozbije).
+  function loadStock() {
+    var seen = {}, cards = [];
+    (state.orders || []).forEach(function (o) { (o.item_lines || []).forEach(function (l) { if (l && l.c && !seen[l.c]) { seen[l.c] = 1; cards.push(l.c); } }); });
+    state.stock = {}; if (!cards.length) return Promise.resolve();
+    var parts = []; for (var i = 0; i < cards.length; i += 80) parts.push(cards.slice(i, i + 80));
+    return Promise.all(parts.map(function (ch) { return api('/rest/v1/mrp_stock?select=card,name,qty,updated_at&card=in.(' + ch.map(function (c) { return '"' + c + '"'; }).join(',') + ')').then(function (rows) { (rows || []).forEach(function (r) { var e = state.stock[r.card] || (state.stock[r.card] = { name: r.name, qty: 0 }); e.qty += Number(r.qty) || 0; if (!e.name) e.name = r.name; }); }); })).catch(function () { state.stock = {}; });
+  }
+  // Položky, ktorých je na sklade menej, než treba (len pre ešte nevydané výdajky).
+  function shortOf(o) {
+    if (o.delivered || o.movement_type === '8' || !o.item_lines || !state.stock) return [];
+    var out = []; o.item_lines.forEach(function (l) { var st = state.stock[l.c]; if (st && st.qty < l.q) out.push({ name: st.name || ('karta ' + l.c), need: l.q, have: st.qty }); });
+    return out;
+  }
+  function nf(n) { return String(Math.round(n * 100) / 100).replace('.', ','); }
+  function stockBadge(o) { var sh = shortOf(o); return sh.length ? '<span class="bdg nostock" title="Na sklade je menej, než treba">Nie je skladom (' + sh.length + ')</span>' : ''; }
+  function stockNote(o) { var sh = shortOf(o); return sh.length ? '<div class="rw-note stk"><b>Nie je skladom:</b> ' + sh.slice(0, 4).map(function (x) { return esc(x.name) + ' – treba ' + nf(x.need) + ', na sklade ' + nf(x.have); }).join('; ') + (sh.length > 4 ? ' … +' + (sh.length - 4) : '') + '</div>' : ''; }
   function dayStart(d) { var p = d.split('-'); return new Date(+p[0], +p[1] - 1, +p[2], 0, 0, 0); }
   function loadArch() {
     var q = state.archQ.replace(/[(),*"\\%]/g, ' ').trim(), path;
@@ -846,7 +865,7 @@ button.chip{border-width:1px}
   function emptyHtml() {
     return '<div class="empty">' + (state.orders.length ? (state.filter !== 'all' || state.q ? 'Žiadna výdajka pre vybraný filter alebo hľadanie. <button class="tbtn" data-act="clearf">Zrušiť filter</button>' : 'V tomto kanáli nie sú žiadne výdajky.') : 'Na tento deň zatiaľ nie sú žiadne výdajky. Zobrazia sa, keď ich pomocný program z MRP odošle, alebo ich pridajte ručne.') + '</div>';
   }
-  function mnoteHtml(o) { return o.mrp_note ? '<div class="mnote"><b>Poznámka z MRP:</b> ' + esc(o.mrp_note) + '</div>' : ''; }
+  function mnoteHtml(o) { return (o.mrp_note ? '<div class="mnote"><b>Poznámka z MRP:</b> ' + esc(o.mrp_note) + '</div>' : '') + (state.isDriver ? '' : stockNote(o)); }
   function amtChip(o) {
     return o.amount_changed_at && !o.delivered && o.amount_prev != null ? '<span class="chip y" title="Suma sa zmenila v MRP">Suma upravená: ' + esc(money(o.amount_prev)) + ' → ' + esc(money(o.amount)) + '</span>' : '';
   }
@@ -892,13 +911,13 @@ button.chip{border-width:1px}
       ? (sigWait(o) ? WAITDRV : '<button class="ib txt sig" data-act="deliver" data-id="' + id + '">' + ic(needsSig(o) ? 'pencil' : 'check', 18) + ' ' + (needsSig(o) ? 'Podpis' : 'Vybavené') + '</button>')
       : '<button class="ib txt sig todo" data-act="pack" data-id="' + id + '">' + ic('box', 18) + ' Zadať balíky</button>';
     var flags = doneChip(o) + (o.incomplete ? '<span class="chip r">Nekompletné</span>' : '');
-    var tags = payBadge(o) + dtBadge(o);
+    var tags = payBadge(o) + dtBadge(o) + stockBadge(o);
     var info = '<div class="rw-info">' + tags + '</div>';
     var sub = (o.city ? '<b class="rw-city">' + esc(o.city) + '</b>' : '') + (o.address ? ' <span>' + esc(o.address) + '</span>' : '') + (o.phone ? ' <span class="rw-ph">· ' + esc(o.phone) + '</span>' : '') + ' <span class="rw-ph">· ' + (isDated(o.channel) ? '' : esc(skDate(o.order_date)) + ' ') + esc(o.time || '') + (o.worker ? ' · ' + esc(o.worker) : '') + '</span>';
     return '<article class="o rw' + (dlBtn(o, false) ? ' dl' : '') + ' s-' + stateOf(o) + (splitMode() && o.id === state.sel ? ' sel' : '') + '" data-row="' + id + '">' +
       '<input class="chk" type="checkbox" data-sel="' + id + '"' + (state.selected[o.id] ? ' checked' : '') + ' aria-label="Vybrať na tlač štítkov">' +
       '<span class="oid">' + esc(dn(o.id)) + (ba && o.route_pos != null ? '<span class="rn">' + o.route_pos + '</span>' : '') + '</span>' +
-      '<div class="rw-main"><div class="rw-l1"><span class="oname">' + esc(o.customer) + '</span>' + (o.goods ? '<span class="bdg goods">Tovar</span>' : '') + (o.items > 0 ? '<span class="bdg pol">' + o.items + ' pol.</span>' : '') + '<span class="rw-info-i">' + tags + '</span>' + flags + '</div><div class="rw-l2">' + sub + '</div>' + (o.note ? '<div class="rw-note man"><b>Poznámka:</b> ' + esc(o.note) + '</div>' : '') + (o.mrp_note ? '<div class="rw-note"><b>Poznámka z MRP:</b> ' + esc(o.mrp_note) + '</div>' : '') + '</div>' +
+      '<div class="rw-main"><div class="rw-l1"><span class="oname">' + esc(o.customer) + '</span>' + (o.goods ? '<span class="bdg goods">Tovar</span>' : '') + (o.items > 0 ? '<span class="bdg pol">' + o.items + ' pol.</span>' : '') + '<span class="rw-info-i">' + tags + '</span>' + flags + '</div><div class="rw-l2">' + sub + '</div>' + (o.note ? '<div class="rw-note man"><b>Poznámka:</b> ' + esc(o.note) + '</div>' : '') + (o.mrp_note ? '<div class="rw-note"><b>Poznámka z MRP:</b> ' + esc(o.mrp_note) + '</div>' : '') + stockNote(o) + '</div>' +
       info +
       (vehOk(o) ? '<button class="ib vehb' + (o.in_vehicle ? ' on' : '') + '" data-act="veh" data-id="' + id + '" title="Vo vozidle" aria-label="Vo vozidle" aria-pressed="' + (o.in_vehicle ? 'true' : 'false') + '">' + ic('truck', 20) + '</button>' : '<span></span>') +
       '<button class="pk' + (o.packages > 0 ? ' has' : '') + '" data-act="pack" data-id="' + id + '" title="Zadať balíky a skladníka" aria-label="Balíky: ' + (o.packages || 0) + '">' + (o.packages || 0) + '</button>' +
@@ -933,7 +952,7 @@ button.chip{border-width:1px}
       (drv || sigWait(o) ? '' : '<button class="dv' + (o.delivered ? ' on' : '') + '" data-act="deliver" data-id="' + id + '" aria-pressed="' + (o.delivered ? 'true' : 'false') + '" aria-label="Doručené">' + ic('check', 18) + '</button>')) +
       '<span class="oid">' + esc(dn(o.id)) + '</span><span class="oname">' + esc(o.customer) + '</span>' +
       (o.goods ? '<span class="bdg goods">Tovar</span>' : '') +
-      '</div><div class="r1x"><div class="tg">' + payBadge(o) + dtBadge(o) + (o.items > 0 ? '<span class="bdg pol">' + o.items + ' pol.</span>' : '') + (o.source === 'mrp' ? '' : '<span class="bdg m">ručne</span>') + '</div><div class="pv">' +
+      '</div><div class="r1x"><div class="tg">' + payBadge(o) + dtBadge(o) + (drv ? '' : stockBadge(o)) + (o.items > 0 ? '<span class="bdg pol">' + o.items + ' pol.</span>' : '') + (o.source === 'mrp' ? '' : '<span class="bdg m">ručne</span>') + '</div><div class="pv">' +
       (vehOk(o) ? '<button class="ib vehb' + (o.in_vehicle ? ' on' : '') + '" data-act="veh" data-id="' + id + '" title="Vo vozidle" aria-label="Vo vozidle" aria-pressed="' + (o.in_vehicle ? 'true' : 'false') + '">' + ic('truck', 22) + '</button>' : '') +
       (drv ? '<span class="pk static' + (o.packages > 0 ? ' has' : '') + '" aria-label="Balíky: ' + (o.packages || 0) + '">' + (o.packages || 0) + '<small>' + (o.packages > 0 ? 'balíkov' : 'chýbajú') + '</small></span>' : '<button class="pk' + (o.packages > 0 ? ' has' : '') + '" data-act="pack" data-id="' + id + '" title="Zadať balíky a skladníka" aria-label="Balíky: ' + o.packages + '">' + (o.packages || 0) + '<small>' + (o.packages > 0 ? 'balíkov' : 'zadať') + '</small></button>') +
       '</div></div>' +
