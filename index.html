@@ -880,7 +880,12 @@ button.chip{border-width:1px}
     return '<button class="chip r" data-act="del" data-id="' + esc(o.id) + '" title="Výdajka už v MRP nie je (zmazaná alebo stornovaná). Kliknutím ju zmažete aj z aplikácie.">⚠ Zmazaná v MRP · zmazať</button>';
   }
   function doneChip(o) {
-    return missChip(o) + doneChip0(o) + amtChip(o) + waitChip(o);
+    return missChip(o) + doneChip0(o) + invChip(o) + amtChip(o) + waitChip(o);
+  }
+  // Informatívna značka: výdajka má číslo faktúry (bez vplyvu na archív).
+  function invChip(o) {
+    if (o.delivered || o.mrp_done_reason === 'faktúra' || !o.invoice_number) return '';
+    return '<span class="chip g" title="Faktúra už je vystavená v MRP">Faktúra ' + esc(o.invoice_number) + '</span>';
   }
   function doneChip0(o) {
     if (!o.mrp_done_reason || o.delivered) return '';
