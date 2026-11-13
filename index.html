@@ -638,15 +638,15 @@ button.chip{border-width:1px}
     var parts = []; for (var i = 0; i < cards.length; i += 80) parts.push(cards.slice(i, i + 80));
     return Promise.all(parts.map(function (ch) { return api('/rest/v1/mrp_stock?select=card,name,qty,updated_at&card=in.(' + ch.map(function (c) { return '"' + c + '"'; }).join(',') + ')').then(function (rows) { (rows || []).forEach(function (r) { var e = state.stock[r.card] || (state.stock[r.card] = { name: r.name, qty: 0 }); e.qty += Number(r.qty) || 0; if (!e.name) e.name = r.name; }); }); })).catch(function () { state.stock = {}; });
   }
-  // Položky, ktorých je na sklade menej, než treba (len pre ešte nevydané výdajky).
+  // Položky, ktorých je na sklade menej, než treba (len pre nevydané a ešte nepripravené výdajky; pripravená už tovar má).
   function shortOf(o) {
-    if (o.delivered || o.movement_type === '8' || !o.item_lines || !state.stock) return [];
+    if (o.delivered || o.movement_type === '8' || isReady(o) || !o.item_lines || !state.stock) return [];
     var out = []; o.item_lines.forEach(function (l) { var st = state.stock[l.c]; if (st && st.qty < l.q) out.push({ name: st.name || ('karta ' + l.c), need: l.q, have: st.qty }); });
     return out;
   }
   function nf(n) { return String(Math.round(n * 100) / 100).replace('.', ','); }
   function stockBadge(o) { var sh = shortOf(o); return sh.length ? '<span class="bdg nostock" title="Na sklade je menej, než treba">Nie je skladom (' + sh.length + ')</span>' : ''; }
-  function stockNote(o) { var sh = shortOf(o); return sh.length ? '<div class="rw-note stk"><b>Nie je skladom:</b> ' + sh.slice(0, 4).map(function (x) { return esc(x.name) + ' – treba ' + nf(x.need) + ', na sklade ' + nf(x.have); }).join('; ') + (sh.length > 4 ? ' … +' + (sh.length - 4) : '') + '</div>' : ''; }
+  function stockNote(o) { var sh = shortOf(o); return sh.length ? '<div class="rw-note stk"><b>Nie je skladom:</b> ' + sh.slice(0, 4).map(function (x) { return esc(x.name) + ' – treba ' + nf(x.need) + (x.have < 0 ? ', sklad v mínuse (' + nf(x.have) + ')' : ', na sklade ' + nf(x.have)); }).join('; ') + (sh.length > 4 ? ' … +' + (sh.length - 4) : '') + '</div>' : ''; }
   function dayStart(d) { var p = d.split('-'); return new Date(+p[0], +p[1] - 1, +p[2], 0, 0, 0); }
   function loadArch() {
     var q = state.archQ.replace(/[(),*"\\%]/g, ' ').trim(), path;
